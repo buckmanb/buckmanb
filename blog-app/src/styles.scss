@@ -1,0 +1,275 @@
+/* src/styles.scss */
+
+// Import theme styles
+@import './styles/theme.scss';
+
+// Background image applied to the body
+body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-image: url('../public/BeausBlog.png');
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+// Utility classes
+.text-center { text-align: center; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.gap-4 { gap: 1rem; }
+
+// Animation classes
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+// Material Design elevation classes
+.elevation-1 { box-shadow: var(--elevation-1); }
+.elevation-2 { box-shadow: var(--elevation-2); }
+.elevation-3 { box-shadow: var(--elevation-3); }
+
+// Card styles
+.custom-card {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--elevation-3);
+  }
+}
+
+// Button styles
+.action-button {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Form styles
+.form-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+// Loading indicator styles
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+// Snackbar custom styles
+.success-snackbar {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.error-snackbar {
+  background-color: var(--error-color);
+  color: white;
+}
+
+// Responsive container
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+// Media queries
+@media (max-width: 768px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  .form-container {
+    padding: 1rem;
+  }
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+  
+  &:hover {
+    background: var(--primary-darker);
+  }
+}
+
+/* Editor content styles */
+.NgxEditor__Content {
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.NgxEditor__Content h1 {
+  font-size: 2rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.NgxEditor__Content h2 {
+  font-size: 1.75rem;
+  margin: 1.25rem 0 0.75rem;
+}
+
+.NgxEditor__Content h3 {
+  font-size: 1.5rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.NgxEditor__Content h4 {
+  font-size: 1.25rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.NgxEditor__Content p {
+  margin: 0 0 1rem;
+}
+
+.NgxEditor__Content a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.NgxEditor__Content a:hover {
+  text-decoration: underline;
+}
+
+.NgxEditor__Content blockquote {
+  border-left: 4px solid var(--primary-lighter);
+  padding-left: 1rem;
+  margin-left: 0;
+  color: var(--text-secondary);
+}
+
+.NgxEditor__Content ul, 
+.NgxEditor__Content ol {
+  margin: 0 0 1rem 1.5rem;
+}
+
+.NgxEditor__Content pre {
+  background-color: var(--surface-color);
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.NgxEditor__Content code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: var(--surface-color);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+}
+
+.NgxEditor__Content pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+.NgxEditor__Content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+}
+
+.NgxEditor__Content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.NgxEditor__Content th,
+.NgxEditor__Content td {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+}
+
+.NgxEditor__Content th {
+  background-color: var(--surface-color);
+}
+
+/* Preview content styles - apply the same styles as editor content */
+.preview-content {
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.preview-content h1,
+.preview-content h2,
+.preview-content h3,
+.preview-content h4,
+.preview-content p,
+.preview-content a,
+.preview-content blockquote,
+.preview-content ul,
+.preview-content ol,
+.preview-content pre,
+.preview-content code,
+.preview-content img,
+.preview-content table,
+.preview-content th,
+.preview-content td {
+  /* Inherit same styles as editor content */
+}
+
+/* Prism.js syntax highlighting customization */
+code[class*="language-"],
+pre[class*="language-"] {
+  text-shadow: none;
+  border-radius: 4px;
+}
+
+/* Dark theme adjustments */
+.dark-theme code[class*="language-"],
+.dark-theme pre[class*="language-"] {
+  background-color: #2d2d2d !important;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "blog2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "angular-cli-ghpages": "^2.0.3"
+  }
+}

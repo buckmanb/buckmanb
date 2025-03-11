@@ -1,0 +1,168 @@
+/* src/styles/theme.scss */
+
+// Light theme colors
+.light-theme {
+    --primary-color: #006494;
+    --primary-lighter: #e3f2fd;
+    --primary-darker: #01579b;
+    --accent-color: #ff6e40;
+    --accent-lighter: #ffd180;
+    --accent-darker: #ff3d00;
+    --background-color: #ffffff;
+    --surface-color: #f8f9fa;
+    --text-primary: rgba(0, 0, 0, 0.87);
+    --text-secondary: rgba(0, 0, 0, 0.6);
+    --border-color: rgba(0, 0, 0, 0.12);
+    --error-color: #f44336;
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --info-color: #2196f3;
+
+    --background-img-color: rgba(255, 255, 255, .85);
+    
+    // Card and elevation colors
+    --card-background: #ffffff;
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.12);
+    --elevation-2: 0 2px 4px rgba(0, 0, 0, 0.14);
+    --elevation-3: 0 3px 6px rgba(0, 0, 0, 0.16);
+    
+    // Input and form colors
+    --input-background: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.23);
+    --input-hover-border: rgba(0, 0, 0, 0.87);
+    --input-focus-border: var(--primary-color);
+  }
+  
+  // Dark theme colors
+  .dark-theme {
+    --primary-color: #64b5f6;
+    --primary-lighter: #1976d2;
+    --primary-darker: #0d47a1;
+    --accent-color: #ff9e80;
+    --accent-lighter: #ff6e40;
+    --accent-darker: #ff3d00;
+    --background-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-primary: rgba(255, 255, 255, 0.87);
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --border-color: rgba(255, 255, 255, 0.12);
+    --error-color: #ef5350;
+    --success-color: #66bb6a;
+    --warning-color: #ffa726;
+    --info-color: #42a5f5;
+
+
+    --background-img-color: rgba(0, 0, 0, .85);
+    
+    // Card and elevation colors
+    --card-background: #1e1e1e;
+    --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --elevation-2: 0 2px 4px rgba(0, 0, 0, 0.45);
+    --elevation-3: 0 3px 6px rgba(0, 0, 0, 0.5);
+    
+    // Input and form colors
+    --input-background: #2c2c2c;
+    --input-border: rgba(255, 255, 255, 0.23);
+    --input-hover-border: rgba(255, 255, 255, 0.87);
+    --input-focus-border: var(--primary-color);
+
+  }
+  
+  // Common styles and transitions
+  body {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    
+    background-image: url('../../public/BeausBlog.png');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+  }
+
+  // Add an overlay to make content more readable
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--background-img-color); /* semi-transparent white */
+    z-index: -1;    
+  }
+
+  // Material overrides
+  .mat-mdc-card {
+    background-color: var(--card-background) !important;
+    box-shadow: var(--card-shadow) !important;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .mat-mdc-button,
+  .mat-mdc-raised-button,
+  .mat-mdc-outlined-button {
+    &.mat-primary {
+      color: var(--primary-color) !important;
+    }
+    
+    &.mat-accent {
+      color: var(--accent-color) !important;
+    }
+  }
+  
+  .mat-mdc-raised-button {
+    &.mat-primary {
+      background-color: var(--primary-color) !important;
+      color: white !important;
+    }
+    
+    &.mat-accent {
+      background-color: var(--accent-color) !important;
+      color: white !important;
+    }
+  }
+  
+  // Form field customization
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      background-color: var(--input-background);
+    }
+    
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+      border-color: var(--input-border);
+    }
+    
+    &.mat-focused {
+      .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__leading,
+      .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__notch,
+      .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-notched-outline__trailing {
+        border-color: var(--input-focus-border);
+      }
+    }
+  }
+  
+  // Custom scrollbar
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--surface-color);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--primary-darker);
+    }
+  }
