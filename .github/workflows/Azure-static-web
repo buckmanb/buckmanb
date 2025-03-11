@@ -1,13 +1,3 @@
-Skip to content
-Navigation Menu
-
-Code
-Issues
-Pull requests
-Deploy to GitHub Pages
-Trying to resolve github not letting me deploy to blog.beaubuckman.com #1
-Workflow file for this run
-.github/workflows/github-actions.yml at 6dee9e4
 # .github/workflows/deploy.yml
 name: Deploy to GitHub Pages
 
