@@ -56,4 +56,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        run: npx ng deploy --dir="dist/blog-app"  name="Beau Buckman" --email="bbuckman@gmail.com"  --base-href="https://blog.beaubuckman.com/"
+        run: npx ng deploy --output-path=dist/blog-app --name="Beau Buckman" --email="bbuckman@gmail.com"  --base-href="https://blog.beaubuckman.com/"
