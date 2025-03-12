@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and deploy to GitHub page              
+      - name: Build and deploy to GitHub page      
         env:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
@@ -52,7 +52,7 @@ jobs:
           # Action to perform          
           action: "upload"
           # Directory location of the application source code
-          app_location: 'dist/blog-app'
+          app_location: '../dist/blog-app'
           # Required token
           azure_static_web_apps_api_token: '87eb866c9c5a3a169d5d53c5f43798ceac6c8de85f38cf3ef708b1ac2574f42306-eb26b1f7-97df-4537-917a-7f30b04639b501e262008c2d961e'
           #repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -60,7 +60,7 @@ jobs:
           # Identical in use to output_location
           # Directory location of the compiled application code after building
           skip_app_build: true
-          output_location: "dist/blog-app"
+          output_location: "../dist/blog-app"
           
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
