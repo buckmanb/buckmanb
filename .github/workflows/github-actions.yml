@@ -44,7 +44,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-        #run: npx ng deploy --dir="dist/blog-app" --repo="https://github.com/buckmanb/buckmanb.git" --name="Beau Buckman" --email="bbuckman@gmail.com"  --base-href="https://blog.beaubuckman.com/"
+          #run: npx ng deploy --dir="dist/blog-app" --repo="https://github.com/buckmanb/buckmanb.git" --name="Beau Buckman" --email="bbuckman@gmail.com"  --base-href="https://blog.beaubuckman.com/"
           run: pwd
         
       - name: Azure Static Web Apps Deploy
@@ -62,7 +62,6 @@ jobs:
           # Directory location of the compiled application code after building
           skip_app_build: false
           output_location: "dist/blog-app"
-          run: pwd
           
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
