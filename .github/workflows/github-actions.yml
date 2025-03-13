@@ -39,7 +39,7 @@
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
            GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
          run: |
-           cat <<EOF > dist\blog-app\.env
+           cat <<EOF > build\.env
            FIREBASE_API_KEY="$FIREBASE_API_KEY"
            FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN"
            FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
