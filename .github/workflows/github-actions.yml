@@ -49,4 +49,4 @@
            GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID"
            EOF      
        - name: Build and deploy to GitHub page
-         run: npx ng deploy --repo="https://github.com/buckmanb/buckmanb.git" --name="Beau Buckman" --email="bbuckman@gmail.com"
+         run: npx ng deploy --dir="build" --repo="https://github.com/buckmanb/buckmanb.git" --name="Beau Buckman" --email="bbuckman@gmail.com"
