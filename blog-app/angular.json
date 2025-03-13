@@ -78,7 +78,7 @@
           "builder": "angular-cli-ghpages:deploy",
           "options": {
             "repo": "https://github.com/buckmanb/buckmanb.git",
-            "baseHref": "/blog",
+            "baseHref": "/buckmanb",
             "email": "bbuckman@gmail.com",
             "name": "Beau Buckman",
             "dir": "build"
