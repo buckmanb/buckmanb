@@ -20,7 +20,7 @@
             "customWebpackConfig": {
               "path": "./webpack.config.js" 
              },            
-            "outputPath": "dist/blog-app",
+            "outputPath": "build",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": [
@@ -77,11 +77,11 @@
         "deploy": {
           "builder": "angular-cli-ghpages:deploy",
           "options": {
-            "repo": "https://github.com/buckmanb/Blog.git",
-            "baseHref": "/Blog/",
+            "repo": "https://github.com/buckmanb/buckmanb.git",
+            "baseHref": "/blog",
             "email": "bbuckman@gmail.com",
             "name": "Beau Buckman",
-            "dir": "dist/blog-app"
+            "dir": "build"
             }
         },
         "serve": {
