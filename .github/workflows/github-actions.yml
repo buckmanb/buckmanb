@@ -38,4 +38,5 @@
            GH_TOKEN: ${{ secrets.GH_TOKEN }}
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
            GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+           BLOG_API: ${{ secrets.BLOG_API }}
          run: npx ng deploy

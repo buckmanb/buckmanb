@@ -37,9 +37,10 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}          
           FIREBASE_AUTH_DOMAIN: $(FIREBASE_AUTH_DOMAIN)
           FIREBASE_PROJECT_ID: $(FIREBASE_PROJECT_ID)
-          FIREBASE_STORAGE_BUCKET: $(vars.FIREBASE_STORAGE_BUCKET)
+          FIREBASE_STORAGE_BUCKET: $(FIREBASE_STORAGE_BUCKET)
           FIREBASE_MESSAGING_SENDER_ID: $(FIREBASE_MESSAGING_SENDER_ID)
-          FIREBASE_APP_ID: $(vars.FIREBASE_APP_ID)
+          FIREBASE_APP_ID: $(FIREBASE_APP_ID)
+          BLOG_API: $(BLOG_API)
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:

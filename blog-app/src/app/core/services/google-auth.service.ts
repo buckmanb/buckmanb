@@ -18,7 +18,7 @@ export class GoogleAuthService {
   private http = inject(HttpClient);
 
   // Server URL for Google authentication
-  private serverUrl = environment.authServerUrl || 'http://localhost:3000';
+  private serverUrl = environment.apiServerUrl || 'http://localhost:3000';
 
   /**
    * Redirect to Google login page (server-side flow)
