@@ -14,7 +14,7 @@ export const routes: Routes = [
     children: [
       { path: 'login', component: LoginComponent },
       { path: 'signup', component: SignupComponent },
-      { path: 'google-callback', component: GoogleCallbackComponent }, // Add this line
+      { path: 'google-callback', component: GoogleCallbackComponent }, 
       { path: '', redirectTo: 'login', pathMatch: 'full' }
     ]
   },
