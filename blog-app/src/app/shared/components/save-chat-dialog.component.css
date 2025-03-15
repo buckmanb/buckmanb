@@ -1,0 +1,45 @@
+.full-width {
+  width: 100%;
+}
+
+.options-section {
+  margin: 16px 0;
+}
+
+.options-section h3 {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+mat-checkbox {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.preview-section {
+  margin: 16px 0;
+  padding: 16px;
+  background-color: var(--surface-color);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.preview-section h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.message-count {
+  font-style: italic;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+
+.message-preview {
+  margin-bottom: 8px;
+  font-size: 12px;
+}

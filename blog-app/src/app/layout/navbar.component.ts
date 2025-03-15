@@ -41,7 +41,7 @@ export class NavbarComponent implements OnInit {
   themeService = inject(ThemeService);
   private chatService = inject(ChatService);
   private dialog = inject(MatDialog);
-
+  
   isChatOpen = signal(false);
   unreadChatMessages = signal(0);
 

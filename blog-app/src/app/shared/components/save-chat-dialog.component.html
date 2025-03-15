@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>Save Chat as Blog Post</h2>
+<form [formGroup]="blogForm" (ngSubmit)="onSubmit()">
+  <div mat-dialog-content>
+    <p>Create a new blog post from this chat conversation.</p>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Blog Title</mat-label>
+      <input matInput formControlName="title" placeholder="Enter a title for your blog post">
+      <mat-error *ngIf="blogForm.get('title')?.hasError('required')">
+        Title is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Excerpt</mat-label>
+      <textarea matInput formControlName="excerpt" placeholder="Enter a short excerpt or summary" rows="3"></textarea>
+      <mat-error *ngIf="blogForm.get('excerpt')?.hasError('required')">
+        Excerpt is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Tags (comma separated)</mat-label>
+      <input matInput formControlName="tags" placeholder="chat, ai, support">
+    </mat-form-field>
+
+    <div class="options-section">
+      <h3>Format Options</h3>
+
+      <mat-checkbox formControlName="includeTimestamps">
+        Include message timestamps
+      </mat-checkbox>
+
+      <mat-checkbox formControlName="includeUserInfo">
+        Include user information
+      </mat-checkbox>
+    </div>
+
+    <div class="preview-section">
+      <h3>Preview</h3>
+      <div class="preview-container">
+        <p class="message-count">
+          Converting {{ data.messages.length }} messages to blog format.
+        </p>
+
+        <div class="message-preview" *ngFor="let message of previewMessages; let i = index">
+          <strong>{{ message.isUser ? 'You' : 'Assistant' }}:</strong> {{ message.content | slice:0:100 }}{{ message.content.length > 100 ? '...' : '' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="blogForm.invalid">
+      Create Blog Post
+    </button>
+  </div>
+</form>

@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Chat History</h2>
+
+<mat-dialog-content class="dialog-content">
+  <p *ngIf="loadingSessions">Loading chat history...</p>
+  <p *ngIf="!loadingSessions && pastSessions.length === 0">No past chat sessions found.</p>
+
+  <mat-list *ngIf="pastSessions.length > 0">
+    <mat-list-item *ngFor="let sessionId of pastSessions">
+      <div mat-line>Session ID: {{ sessionId }}</div>
+      <div mat-line>Date: {{ sessionId.split('-')[0] | date:'medium' }}</div>
+      <button mat-icon-button matListIcon (click)="loadSession(sessionId)" matTooltip="Load this session">
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </mat-list-item>
+  </mat-list>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button color="warn" (click)="clearHistory()" matTooltip="Clear all chat history">
+    <mat-icon>delete_sweep</mat-icon> Clear History
+  </button>
+  <button mat-button color="accent" (click)="logoutAndClearHistory()" matTooltip="Logout and clear history">
+    <mat-icon>logout</mat-icon> Logout & Clear
+  </button>
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>
