@@ -1,0 +1,111 @@
+<div class="chatbot-container" [class.open]="isOpen()">
+  <div class="chat-header">
+    <h3>Chat Support</h3>
+    <div class="chat-actions">
+      <button mat-icon-button (click)="openChatHistory()" matTooltip="Chat history">
+        <mat-icon>history</mat-icon>
+      </button>
+      <button mat-icon-button (click)="clearChat()" matTooltip="Clear chat">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+      <button mat-icon-button (click)="toggleChat()" matTooltip="Close chat">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="chat-messages" #chatMessagesContainer>
+    @for (message of messages(); track message.id) {
+      <div class="message-container" [class.user-message]="message.isUser" [class.bot-message]="!message.isUser">
+        @if (message.isTyping) {
+          <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        } @else {
+          <div class="message" [ngClass]="{'rich-content': message.contentType === 'blog-preview'}">
+            @if (message.contentType === 'blog-preview' && message.blogPreview) {
+              <div class="blog-preview" (click)="navigateToBlog(message.blogPreview?.id)">
+                @if (message.blogPreview.imageUrl) {
+                  <img [src]="message.blogPreview.imageUrl" alt="Blog preview">
+                }
+                <div class="preview-content">
+                  <h4>{{ message.blogPreview.title }}</h4>
+                  <p>{{ message.blogPreview.excerpt }}</p>
+                </div>
+              </div>
+            } @else {
+              {{ message.content }}
+              @if (message.isUser) {
+                <button mat-icon-button class="delete-btn" (click)="deleteMessage(message.id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              } @else {
+                <div class="feedback-buttons">
+                  <button mat-icon-button matTooltip="Helpful" (click)="provideFeedback(message.id, 'helpful')">
+                    <mat-icon>thumb_up</mat-icon>
+                  </button>
+                  <button mat-icon-button matTooltip="Not helpful" (click)="provideFeedback(message.id, 'not_helpful')">
+                    <mat-icon>thumb_down</mat-icon>
+                  </button>
+                </div>
+              }
+              @if (!message.isTyping && !message.originalMessageId) {
+                <button mat-icon-button class="translate-btn" [matMenuTriggerFor]="translateMenu">
+                  <mat-icon>translate</mat-icon>
+                </button>
+
+                <mat-menu #translateMenu="matMenu">
+                  <button mat-menu-item (click)="translateMessage(message.id, 'es')">Spanish</button>
+                  <button mat-menu-item (click)="translateMessage(message.id, 'fr')">French</button>
+                  <button mat-menu-item (click)="translateMessage(message.id, 'de')">German</button>
+                  <button mat-menu-item (click)="translateMessage(message.id, 'zh')">Chinese</button>
+                  <button mat-menu-item (click)="translateMessage(message.id, 'ja')">Japanese</button>
+                </mat-menu>
+              }
+            }
+          </div>
+          @if (message.translatedFrom) {
+            <div class="message-translation-info">
+              Translated from: {{ message.translatedFrom }}
+            </div>
+          }
+          <div class="message-time">
+            {{ formatTimestamp(message.timestamp) }}
+          </div>
+        }
+      </div>
+    }
+    @if (lastBotMessage()?.followUpQuestions?.length) {
+      <div class="suggestion-buttons">
+        @for (suggestion of lastBotMessage()?.followUpQuestions || []; track suggestion) {
+          <button mat-stroked-button color="primary" (click)="sendSuggestion(suggestion)">
+            {{ suggestion }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="chat-input">
+    <mat-form-field appearance="outline" class="full-width">
+      <input
+        matInput
+        placeholder="Type a message..."
+        [(ngModel)]="newMessage"
+        (keyup.enter)="sendMessage()">
+    </mat-form-field>
+
+    <button mat-icon-button color="primary"
+            (click)="toggleVoiceInput()"
+            [class.recording]="isRecording()"
+            matTooltip="Voice input">
+      <mat-icon>mic</mat-icon>
+    </button>
+
+    <button mat-icon-button color="primary" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+      <mat-icon>send</mat-icon>
+    </button>
+  </div>
+</div>

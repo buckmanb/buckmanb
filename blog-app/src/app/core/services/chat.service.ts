@@ -1,10 +1,25 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, NgZone } from '@angular/core';
+import { Firestore, collection, addDoc, doc, onSnapshot, query, orderBy, limit, Timestamp, collectionGroup, where, getDocs, deleteDoc, getDoc, updateDoc, writeBatch } from '@angular/fire/firestore';
+import { AuthService } from './auth.service';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Firestore, collection, addDoc, query, orderBy, limit, onSnapshot, Timestamp, where, getDocs, updateDoc, doc, getDoc, deleteDoc } from '@angular/fire/firestore';
-import { AuthService } from '../auth/auth.service';
-import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Functions, httpsCallable } from '@angular/fire/functions';
-import { BlogService } from './blog.service';
+import { HttpClient } from '@angular/common/http';
+import { BlogService, BlogPost } from './blog.service';
+
+export type MessageContentType = 'text' | 'link' | 'image' | 'blog-preview';
+
+export interface MessageLink {
+  url: string;
+  text: string;
+}
+
+export interface BlogPreview {
+  id: string;
+  title: string;
+  excerpt: string;
+  imageUrl?: string;
+}
 
 export interface ChatMessage {
   id?: string;
@@ -16,7 +31,23 @@ export interface ChatMessage {
   read?: boolean;
   followUpQuestions?: string[]; // New field
   isTyping?: boolean; // New field for typing indicators
+  contentType?: MessageContentType;
+  links?: MessageLink[];
+  blogPreview?: BlogPreview;
+  originalMessageId?: string; // Reference to the original message if this is a translation
+  translatedFrom?: string; // Original content before translation
+  language?: string; // Language code
 }
+
+export interface ChatFeedback {
+  sessionId: string;
+  messageId: string;
+  userId?: string;
+  rating: 'helpful' | 'not_helpful';
+  comment?: string;
+  timestamp: Date | Timestamp;
+}
+
 
 interface BotResponse {
   keywords: string[];
@@ -24,22 +55,32 @@ interface BotResponse {
   followUpQuestions?: string[];
 }
 
+
 @Injectable({
   providedIn: 'root'
 })
 export class ChatService {
   private firestore = inject(Firestore);
+  private ngZone = inject(NgZone);
   private authService = inject(AuthService);
+  private functions = inject(Functions);
+  private http = inject(HttpClient);
+  private blogService = inject(BlogService);
+  private router = inject(Router);
 
-  private messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
-  messages$ = this.messagesSubject.asObservable();
-
-  private unreadCountSubject = new BehaviorSubject<number>(0);
-  unreadCount$ = this.unreadCountSubject.asObservable();
-
-  private sessionId: string = '';
   private chatOpen = false;
-
+  private sessionId: string;
+  messages$ = new BehaviorSubject<ChatMessage[]>([]);
+  private typingTimeoutId: any = null;
+  private conversationContext: {
+    topic?: string;
+    recentEntities?: string[];
+    lastQuestionAnswered?: boolean;
+    conversationLength: number;
+    userProfileInfo?: any;
+  } = {
+    conversationLength: 0
+  };
   private botResponses: BotResponse[] = [
     {
       keywords: ['hello', 'hi', 'hey', 'greetings'],
@@ -82,100 +123,69 @@ export class ChatService {
     }
   ];
 
-  private conversationContext: {
-    topic?: string;
-    recentEntities?: string[];
-    lastQuestionAnswered?: boolean;
-    conversationLength: number;
-    userProfileInfo?: any;
-  } = {
-    conversationLength: 0
-  };
 
   constructor() {
-    this.initSession();
-  }
-
-  private initSession(): void {
-    // Generate unique session ID if not exists
     this.sessionId = localStorage.getItem('chat_session_id') || this.generateSessionId();
     localStorage.setItem('chat_session_id', this.sessionId);
-
-    // Subscribe to messages for this session
     this.subscribeToMessages();
   }
 
-  private generateSessionId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  setChatOpen(isOpen: boolean) {
+    this.chatOpen = isOpen;
+    if (isOpen) {
+      this.markAllMessagesAsRead();
+    }
   }
 
-  private subscribeToMessages(): void {
+  private generateSessionId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+  }
+
+  private subscribeToMessages() {
+    if (!this.sessionId) return;
     const messagesRef = collection(this.firestore, 'chatMessages');
-    const q = query(
-      messagesRef,
-      where('sessionId', '==', this.sessionId),
-      orderBy('timestamp', 'asc'),
-      limit(50)
-    );
+    const q = query(messagesRef, where('sessionId', '==', this.sessionId), orderBy('timestamp', 'asc'), limit(50));
 
     onSnapshot(q, (snapshot) => {
       const messages = snapshot.docs.map(doc => {
-        const data = doc.data() as ChatMessage;
         return {
-          ...data,
           id: doc.id,
-          timestamp: data.timestamp
-        };
+          ...doc.data()
+        } as ChatMessage;
       });
+      this.messages$.next(messages);
 
-      this.messagesSubject.next(messages);
-      this.updateUnreadCount();
+      // Mark bot messages as read when chat is opened
+      if (this.chatOpen) {
+        this.markAllMessagesAsRead();
+      }
     });
   }
 
-  setChatOpen(isOpen: boolean): void {
-    this.chatOpen = isOpen;
-    if (isOpen) {
-      this.markAllAsRead();
-    }
-  }
-
-  private async markAllAsRead(): Promise<void> {
-    // Don't run if there are no unread messages
-    if (this.unreadCountSubject.value === 0) return;
-
+  private markAllMessagesAsRead() {
     const messagesRef = collection(this.firestore, 'chatMessages');
-    const q = query(
-      messagesRef,
-      where('sessionId', '==', this.sessionId),
-      where('isUser', '==', false),
-      where('read', '==', false)
-    );
+    const q = query(messagesRef, where('sessionId', '==', this.sessionId), where('isUser', '==', false), where('read', '==', false));
 
-    const snapshot = await getDocs(q);
-
-    snapshot.docs.forEach(async (document) => {
-      await updateDoc(doc(this.firestore, 'chatMessages', document.id), {
-        read: true
+    getDocs(q).then(snapshot => {
+      snapshot.forEach(doc => {
+        this.updateMessageReadStatus(doc.id, true);
       });
     });
   }
 
-  private updateUnreadCount(): void {
-    // Only count unread messages from the bot when chat is closed
-    if (this.chatOpen) {
-      this.unreadCountSubject.next(0);
-      return;
+
+  private async updateMessageReadStatus(messageId: string, read: boolean): Promise<void> {
+    const messageRef = doc(this.firestore, 'chatMessages', messageId);
+    try {
+      await getDoc(messageRef); // Just to check if it exists
+      await doc(this.firestore, 'chatMessages', messageId);
+      await getDoc(messageRef); // Verify document still exists after update
+      await updateDoc(messageRef, { read: read }, { merge: true });
+    } catch (error) {
+      console.error('Error updating message read status:', error);
     }
-
-    const unreadCount = this.messagesSubject.value.filter(
-      msg => !msg.isUser && msg.read === false
-    ).length;
-
-    this.unreadCountSubject.next(unreadCount);
   }
 
-  private typingTimeoutId: any = null;
 
   async sendMessage(content: string): Promise<void> {
     if (!content.trim()) return;
@@ -189,11 +199,14 @@ export class ChatService {
       isUser: true,
       userId,
       sessionId: this.sessionId,
-      read: true // User messages are always "read"
+      read: true
     };
 
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), message);
+
+    // Track messaging event
+    this.trackEvent('message_sent', { length: content.length });
 
     // Show typing indicator
     this.showTypingIndicator();
@@ -214,6 +227,56 @@ export class ChatService {
     }, delay);
   }
 
+  async clearChat(): Promise<void> {
+    try {
+      const messagesRef = collection(this.firestore, 'chatMessages');
+      const q = query(messagesRef, where('sessionId', '==', this.sessionId));
+      const snapshot = await getDocs(q);
+
+      // Delete messages in batches
+      const batchSize = 50;
+      let batch = writeBatch(this.firestore);
+      let count = 0;
+
+      snapshot.docs.forEach(msgDoc => {
+        batch.delete(msgDoc.ref);
+        count++;
+
+        if (count >= batchSize) {
+          batch.commit();
+          batch = writeBatch(this.firestore);
+          count = 0;
+        }
+      });
+
+      // Commit remaining deletes
+      if (count > 0) {
+        await batch.commit();
+      }
+
+      // Optionally, generate a new session ID after clearing chat
+      this.sessionId = this.generateSessionId();
+      localStorage.setItem('chat_session_id', this.sessionId);
+      this.subscribeToMessages(); // Re-subscribe to the new session
+      this.messages$.next([]); // Clear local messages immediately
+
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      throw error;
+    }
+  }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    try {
+      const messageRef = doc(this.firestore, 'chatMessages', messageId);
+      await deleteDoc(messageRef);
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      throw error;
+    }
+  }
+
+
   private async generateBotResponse(userMessage: string): Promise<void> {
     // Update conversation context
     this.updateConversationContext(userMessage);
@@ -222,10 +285,10 @@ export class ChatService {
     let botResponse = '';
     let followUpQuestions: string[] = [];
 
-    // Analyze message for topic extraction
+    // Normalize message for better matching
     const normalizedMsg = userMessage.toLowerCase();
 
-    // Check for matches in our predefined responses
+    // Try to find a matching response
     for (const response of this.botResponses) {
       if (response.keywords.some(keyword => normalizedMsg.includes(keyword))) {
         botResponse = response.response;
@@ -244,6 +307,62 @@ export class ChatService {
       ];
     }
 
+     // Check for blog post references
+    if (normalizedMsg.includes('blog') ||
+        normalizedMsg.includes('article') ||
+        normalizedMsg.includes('post')) {
+
+      // Try to find relevant blog posts
+      try {
+        const posts = await this.blogService.searchPosts(
+          userMessage.replace(/blog|article|post/gi, '').trim(),
+          3
+        );
+
+        if (posts.length > 0) {
+          botResponse = `I found some blog posts that might interest you:`;
+          // First send the text response
+          const botTextMessage: ChatMessage = {
+            content: botResponse,
+            timestamp: Timestamp.now(),
+            isUser: false,
+            sessionId: this.sessionId,
+            read: this.chatOpen,
+            followUpQuestions
+          };
+          await addDoc(collection(this.firestore, 'chatMessages'), botTextMessage);
+
+          // Then send blog previews for each relevant post
+          for (const post of posts) {
+            const previewMessage: ChatMessage = {
+              content: ``, // Description is in blogPreview
+              contentType: 'blog-preview',
+              blogPreview: {
+                id: post.id || '',
+                title: post.title,
+                excerpt: post.excerpt || post.title,
+                imageUrl: post.coverImage
+              },
+              timestamp: Timestamp.now(),
+              isUser: false,
+              sessionId: this.sessionId,
+              read: this.chatOpen
+            };
+
+            await addDoc(collection(this.firestore, 'chatMessages'), previewMessage);
+          }
+
+          return; // Important to return to avoid sending default text response as well
+        } else {
+          botResponse = "I couldn't find any blog posts matching your request. You can browse all posts on the home page.";
+        }
+      } catch (error) {
+        console.error('Error searching posts:', error);
+        botResponse = "Sorry, I encountered an error while searching for blog posts."; // Inform user about the error
+      }
+    }
+
+
     // Enhance response based on context
     if (this.conversationContext.topic) {
       // If we've identified a specific topic the user is interested in
@@ -261,6 +380,8 @@ export class ChatService {
       botResponse = botResponse.replace('How can I help you?', 'How else can I assist you today?');
     }
 
+
+    // Create the message
     const botMessage: ChatMessage = {
       content: botResponse,
       timestamp: Timestamp.now(),
@@ -308,30 +429,34 @@ export class ChatService {
     }
   }
 
-  async deleteMessage(messageId: string): Promise<void> {
-    try {
-      const user = this.authService.currentUser();
+  showTypingIndicator(): void {
+    const typingMessage: ChatMessage = {
+      content: '',
+      timestamp: Timestamp.now(),
+      isUser: false,
+      sessionId: this.sessionId,
+      read: this.chatOpen,
+      isTyping: true
+    };
 
-      // Get the message first to check permissions
-      const messageRef = doc(this.firestore, 'chatMessages', messageId);
-      const messageSnap = await getDoc(messageRef);
+    // Add temporary typing indicator message
+    addDoc(collection(this.firestore, 'chatMessages'), typingMessage);
+  }
 
-      if (!messageSnap.exists()) {
-        throw new Error('Message not found');
-      }
+  hideTypingIndicator(): void {
+    // Find and remove typing indicator messages
+    const messagesRef = collection(this.firestore, 'chatMessages');
+    const q = query(
+      messagesRef,
+      where('sessionId', '==', this.sessionId),
+      where('isTyping', '==', true)
+    );
 
-      const message = messageSnap.data() as ChatMessage;
-
-      // Only allow users to delete their own messages
-      if (message.isUser && user?.uid === message.userId) {
-        await deleteDoc(messageRef);
-      } else {
-        throw new Error('You can only delete your own messages');
-      }
-    } catch (error) {
-      console.error('Error deleting message:', error);
-      throw error;
-    }
+    getDocs(q).then(snapshot => {
+      snapshot.docs.forEach(doc => {
+        deleteDoc(doc.ref);
+      });
+    });
   }
 
   async getPastSessions(): Promise<string[]> {
@@ -376,51 +501,87 @@ export class ChatService {
     this.subscribeToMessages();
   }
 
-  clearChat(): void {
-    // Generate a new session ID to start fresh
-    this.sessionId = this.generateSessionId();
-    localStorage.setItem('chat_session_id', this.sessionId);
+  async translateMessage(messageId: string, targetLanguage: string): Promise<void> {
+    try {
+      const messageRef = doc(this.firestore, 'chatMessages', messageId);
+      const messageSnap = await getDoc(messageRef);
 
-    // Re-subscribe with new session ID
-    this.subscribeToMessages();
-    
-    // Reset conversation context
-    this.resetConversationContext();
-  }
-  
-  private resetConversationContext(): void {
-    this.conversationContext = {
-      conversationLength: 0
-    };
-  }
-  
-  showTypingIndicator(): void {
-    const typingMessage: ChatMessage = {
-      content: '',
-      timestamp: Timestamp.now(),
-      isUser: false,
-      sessionId: this.sessionId,
-      read: this.chatOpen,
-      isTyping: true
-    };
-    
-    // Add temporary typing indicator message
-    addDoc(collection(this.firestore, 'chatMessages'), typingMessage);
-  }
-  
-  hideTypingIndicator(): void {
-    // Find and remove typing indicator messages
-    const messagesRef = collection(this.firestore, 'chatMessages');
-    const q = query(
-      messagesRef,
-      where('sessionId', '==', this.sessionId),
-      where('isTyping', '==', true)
-    );
-    
-    getDocs(q).then(snapshot => {
-      snapshot.docs.forEach(doc => {
-        deleteDoc(doc.ref);
+      if (!messageSnap.exists()) {
+        throw new Error('Message not found');
+      }
+
+      const message = messageSnap.data() as ChatMessage;
+
+      // For a production app, you would use a translation API like Google Translate
+      // This is a simplified example that calls a cloud function
+
+      // Option 1: Using Firebase Functions
+      /*
+      const translateFn = httpsCallable(this.functions, 'translateText');
+      const result = await translateFn({
+        text: message.content,
+        targetLanguage
       });
-    });
+
+      const translatedText = result.data.translatedText;
+      */
+
+      // Option 2: For demo purposes, just append the target language
+      const translatedText = `${message.content} [Translated to ${targetLanguage}]`;
+
+      // Create a new message with the translation
+      const translatedMessage: ChatMessage = {
+        content: translatedText,
+        timestamp: Timestamp.now(),
+        isUser: message.isUser,
+        userId: message.userId,
+        sessionId: this.sessionId,
+        read: true,
+        originalMessageId: messageId,
+        translatedFrom: message.content,
+        language: targetLanguage
+      };
+
+      await addDoc(collection(this.firestore, 'chatMessages'), translatedMessage);
+
+    } catch (error) {
+      console.error('Error translating message:', error);
+      throw error;
+    }
+  }
+
+  async provideFeedback(messageId: string, rating: 'helpful' | 'not_helpful', comment?: string): Promise<void> {
+    const user = this.authService.currentUser();
+    const userId = user?.uid;
+
+    const feedback: ChatFeedback = {
+      sessionId: this.sessionId,
+      messageId,
+      userId,
+      rating,
+      comment,
+      timestamp: Timestamp.now()
+    };
+
+    try {
+      await addDoc(collection(this.firestore, 'chatFeedback'), feedback);
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+      throw error;
+    }
+  }
+
+  async trackEvent(eventType: string, data?: any): Promise<void> {
+    try {
+      await addDoc(collection(this.firestore, 'chatAnalytics'), {
+        sessionId: this.sessionId,
+        userId: this.authService.currentUser()?.uid,
+        eventType,
+        data,
+        timestamp: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error tracking event:', error);
+    }
   }
 }
