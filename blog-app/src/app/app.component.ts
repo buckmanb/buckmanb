@@ -33,7 +33,7 @@ import { ChatService } from './core/services/chat.service';
       <footer class="footer">
         <div class="container">
           <div class="footer-content">
-            <p>&copy; {{ currentYear }} My Angular Blog. All rights reserved.</p>
+            <p>&copy; {{ currentYear }} Beau's Blog. All rights reserved.</p>
             <div class="footer-links">
               <a routerLink="/legal/privacy-policy">Privacy Policy</a>
               <a routerLink="/sitemap">Sitemap</a>

@@ -83,7 +83,7 @@ declare global {
               </div>
             </div>
 
-            <mat-form-field>
+            <mat-form-field style="display: block;">
               <mat-label>Email</mat-label>
               <input matInput formControlName="email" type="email" [readonly]="loading()">
               <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
@@ -94,7 +94,7 @@ declare global {
               </mat-error>
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field style="display: block;">
               <mat-label>Password</mat-label>
               <input matInput formControlName="password" type="password" [readonly]="loading()">
               <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
