@@ -10,7 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { ChatService, ChatMessage } from '../../core/services/chat.service';
-import { AuthService } from '../../core/auth/auth.service';
+import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
 

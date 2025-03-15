@@ -180,7 +180,7 @@ export class ChatService {
       await getDoc(messageRef); // Just to check if it exists
       await doc(this.firestore, 'chatMessages', messageId);
       await getDoc(messageRef); // Verify document still exists after update
-      await updateDoc(messageRef, { read: read }, { merge: true });
+      await updateDoc(messageRef, { read: read });
     } catch (error) {
       console.error('Error updating message read status:', error);
     }
@@ -341,7 +341,7 @@ export class ChatService {
                 id: post.id || '',
                 title: post.title,
                 excerpt: post.excerpt || post.title,
-                imageUrl: post.coverImage
+                imageUrl: post.imageUrl // Changed from post.coverImage
               },
               timestamp: Timestamp.now(),
               isUser: false,
