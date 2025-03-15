@@ -249,6 +249,48 @@ export class ChatService {
     }
   }
 
+  async getPastSessions(): Promise<string[]> {
+    const user = this.authService.currentUser();
+    if (!user) return [];
+
+    try {
+      // Get all unique sessionIds for this user
+      const messagesRef = collection(this.firestore, 'chatMessages');
+      const q = query(
+        messagesRef,
+        where('userId', '==', user.uid),
+        orderBy('timestamp', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+
+      // Extract unique session IDs
+      const sessionIds = new Set<string>();
+      snapshot.docs.forEach(doc => {
+        const data = doc.data() as ChatMessage;
+        if (data.sessionId) {
+          sessionIds.add(data.sessionId);
+        }
+      });
+
+      return Array.from(sessionIds);
+    } catch (error) {
+      console.error('Error getting past sessions:', error);
+      return [];
+    }
+  }
+
+  async loadSession(sessionId: string): Promise<void> {
+    if (!sessionId) return;
+
+    // Set the current session ID
+    this.sessionId = sessionId;
+    localStorage.setItem('chat_session_id', sessionId);
+
+    // Refresh messages with the new session ID
+    this.subscribeToMessages();
+  }
+
   clearChat(): void {
     // Generate a new session ID to start fresh
     this.sessionId = this.generateSessionId();

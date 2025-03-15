@@ -7,8 +7,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { ChatService, ChatMessage } from '../../core/services/chat.service';
+import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
 
 @Component({
   selector: 'app-chatbot',
@@ -21,7 +23,8 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
     MatInputModule,
     MatFormFieldModule,
     MatBadgeModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatDialogModule
   ],
   template: `
     <div class="chatbot-container">
@@ -41,6 +44,9 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
         <div class="chat-header">
           <h3>Chat Support</h3>
           <div class="chat-actions">
+            <button mat-icon-button (click)="openChatHistory()" matTooltip="Chat history">
+              <mat-icon>history</mat-icon>
+            </button>
             <button mat-icon-button (click)="clearChat()" matTooltip="Clear chat">
               <mat-icon>delete_outline</mat-icon>
             </button>
@@ -262,6 +268,7 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
 })
 export class ChatbotComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
+  private dialog = inject(MatDialog);
   
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
   
@@ -346,6 +353,18 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   sendSuggestion(suggestion: string): void {
     this.newMessage = suggestion;
     this.sendMessage();
+  }
+
+  openChatHistory(): void {
+    const dialogRef = this.dialog.open(ChatHistoryDialogComponent, {
+      width: '400px'
+    });
+
+    dialogRef.afterClosed().subscribe(sessionId => {
+      if (sessionId) {
+        this.chatService.loadSession(sessionId);
+      }
+    });
   }
   
   private scrollToBottom(): void {
