@@ -182,55 +182,61 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   async startRecording(): Promise<void> {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      this.recognition = this.recognition || new (SpeechRecognition || webkitSpeechRecognition)();
-      this.recognition.lang = 'en-US'; // Set language
-      this.recognition.interimResults = false; // Get final results only
-      this.recognition.maxAlternatives = 1; // Get single best result
+      const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognitionConstructor) {
+        this.recognition = this.recognition || new SpeechRecognitionConstructor();
+        this.recognition.lang = 'en-US'; // Set language
+        this.recognition.interimResults = false; // Get final results only
+        this.recognition.maxAlternatives = 1; // Get single best result
 
-      this.recognition.onstart = () => {
-        this.isRecording.set(true);
-        this.newMessage = 'Listening...'; // Update input to indicate listening
-      };
+        this.recognition.onstart = () => {
+          this.isRecording.set(true);
+          this.newMessage = 'Listening...'; // Update input to indicate listening
+        };
 
-      this.recognition.onspeechstart = () => {
-        this.newMessage = 'Listening (recording)...'; // Update input to indicate recording
-      };
+        this.recognition.onspeechstart = () => {
+          this.newMessage = 'Listening (recording)...'; // Update input to indicate recording
+        };
 
-      this.recognition.onspeechend = () => {
-        this.stopRecognition(); // Stop recognition after speech ends
-      };
+        this.recognition.onspeechend = () => {
+          this.stopRecognition(); // Stop recognition after speech ends
+        };
 
-      this.recognition.onerror = (event: any) => {
-        this.isRecording.set(false);
-        this.newMessage = ''; // Clear "Listening..." message
-        let errorMessage = 'Voice recognition error';
-        if (event.error === 'not-allowed') {
-          errorMessage = 'Microphone access denied. Please check your browser settings.';
-        } else if (event.error === 'no-speech') {
-          errorMessage = 'No speech detected. Please try again.';
+        this.recognition.onerror = (event: any) => {
+          this.isRecording.set(false);
+          this.newMessage = ''; // Clear "Listening..." message
+          let errorMessage = 'Voice recognition error';
+          if (event.error === 'not-allowed') {
+            errorMessage = 'Microphone access denied. Please check your browser settings.';
+          } else if (event.error === 'no-speech') {
+            errorMessage = 'No speech detected. Please try again.';
+          }
+          this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+          console.error('Speech recognition error:', event.error);
+        };
+
+        this.recognition.onresult = (event: any) => {
+          this.isRecording.set(false);
+          this.newMessage = ''; // Clear "Listening..." message
+
+          const transcript = event.results[0][0].transcript;
+          this.ngZone.run(() => { // Run inside NgZone for Angular change detection
+            this.newMessage = transcript;
+          });
+        };
+
+        try {
+          this.recognition.start();
+        } catch (error) {
+          this.isRecording.set(false);
+          this.newMessage = '';
+          this.snackBar.open('Error starting voice recognition.', 'Close', { duration: 5000 });
+          console.error('Error starting speech recognition:', error);
         }
-        this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
-        console.error('Speech recognition error:', event.error);
-      };
-
-      this.recognition.onresult = (event: any) => {
-        this.isRecording.set(false);
-        this.newMessage = ''; // Clear "Listening..." message
-
-        const transcript = event.results[0][0].transcript;
-        this.ngZone.run(() => { // Run inside NgZone for Angular change detection
-          this.newMessage = transcript;
-        });
-      };
-
-      try {
-        this.recognition.start();
-      } catch (error) {
-        this.isRecording.set(false);
-        this.newMessage = '';
-        this.snackBar.open('Error starting voice recognition.', 'Close', { duration: 5000 });
-        console.error('Error starting speech recognition:', error);
+      } else {
+        this.snackBar.open('Voice input not supported in this browser.', 'Close', { duration: 5000 });
       }
+
 
     } else {
       this.snackBar.open('Voice input not supported in this browser.', 'Close', { duration: 5000 });
