@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Firestore, collection, addDoc, query, orderBy, limit, onSnapshot, Timestamp, where, getDocs, updateDoc, doc } from '@angular/fire/firestore';
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from './auth.service';
 
 export interface ChatMessage {
   id?: string;

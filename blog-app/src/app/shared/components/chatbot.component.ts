@@ -35,7 +35,7 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
         (click)="toggleChat()">
         <mat-icon>chat</mat-icon>
       </button>
-
+      
       <!-- Chat Interface -->
       <div class="chat-window" [class.open]="isOpen()">
         <div class="chat-header">
@@ -49,7 +49,7 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
             </button>
           </div>
         </div>
-
+        
         <div class="chat-messages" #messageContainer>
           @if (messages().length === 0) {
             <div class="empty-chat">
@@ -67,7 +67,7 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
             </div>
           }
         </div>
-
+        
         <div class="chat-input">
           <mat-form-field appearance="outline" class="full-width">
             <input 
@@ -90,11 +90,11 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
       right: 20px;
       z-index: 1000;
     }
-
+    
     .chat-toggle-button {
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
-
+    
     .chat-window {
       position: absolute;
       bottom: 70px;
@@ -111,11 +111,11 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
       transform-origin: bottom right;
       transition: transform 0.3s ease-out;
     }
-
+    
     .chat-window.open {
       transform: scale(1);
     }
-
+    
     .chat-header {
       padding: 15px;
       background-color: var(--primary-color);
@@ -124,15 +124,15 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
       justify-content: space-between;
       align-items: center;
     }
-
+    
     .chat-header h3 {
       margin: 0;
     }
-
+    
     .chat-actions {
       display: flex;
     }
-
+    
     .chat-messages {
       flex: 1;
       padding: 15px;
@@ -141,39 +141,39 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
       flex-direction: column;
       gap: 10px;
     }
-
+    
     .message-container {
       display: flex;
       flex-direction: column;
       max-width: 80%;
     }
-
+    
     .user-message {
       align-self: flex-end;
     }
-
+    
     .bot-message {
       align-self: flex-start;
     }
-
+    
     .message {
       padding: 10px 15px;
       border-radius: 18px;
       word-break: break-word;
       white-space: pre-wrap;
     }
-
+    
     .user-message .message {
       background-color: var(--primary-color);
       color: white;
       border-bottom-right-radius: 5px;
     }
-
+    
     .bot-message .message {
       background-color: var(--surface-color);
       border-bottom-left-radius: 5px;
     }
-
+    
     .message-time {
       font-size: 11px;
       opacity: 0.7;
@@ -181,25 +181,25 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
       margin-left: 5px;
       margin-right: 5px;
     }
-
+    
     .chat-input {
       padding: 10px 15px;
       display: flex;
       align-items: center;
       border-top: 1px solid var(--border-color);
     }
-
+    
     .full-width {
       width: 100%;
       margin-right: 10px;
     }
-
+    
     .empty-chat {
       text-align: center;
       color: var(--text-secondary-color);
       margin-top: 50px;
     }
-
+    
     @media (max-width: 450px) {
       .chat-window {
         width: 300px;
@@ -212,14 +212,14 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
 })
 export class ChatbotComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
-
+  
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
-
+  
   messages = signal<ChatMessage[]>([]);
   isOpen = signal<boolean>(false);
   unreadCount = signal<number>(0);
   newMessage = '';
-
+  
   ngOnInit(): void {
     // Subscribe to messages
     this.chatService.messages$.subscribe(messages => {
@@ -227,50 +227,50 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
       // Scroll to bottom on new messages
       setTimeout(() => this.scrollToBottom(), 100);
     });
-
+    
     // Subscribe to unread count
     this.chatService.unreadCount$.subscribe(count => {
       this.unreadCount.set(count);
     });
   }
-
+  
   ngAfterViewChecked(): void {
     this.scrollToBottom();
   }
-
+  
   toggleChat(): void {
     this.isOpen.update(value => !value);
     this.chatService.setChatOpen(this.isOpen());
-
+    
     if (this.isOpen()) {
       setTimeout(() => this.scrollToBottom(), 300);
     }
   }
-
+  
   sendMessage(): void {
     if (!this.newMessage.trim()) return;
-
+    
     this.chatService.sendMessage(this.newMessage.trim());
     this.newMessage = '';
   }
-
+  
   clearChat(): void {
     this.chatService.clearChat();
   }
-
+  
   formatTimestamp(timestamp: any): string {
     if (!timestamp) return '';
-
+    
     let date;
     if (timestamp.toDate && typeof timestamp.toDate === 'function') {
       date = timestamp.toDate();
     } else {
       date = new Date(timestamp);
     }
-
+    
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
-
+  
   private scrollToBottom(): void {
     if (this.messageContainer) {
       const element = this.messageContainer.nativeElement;

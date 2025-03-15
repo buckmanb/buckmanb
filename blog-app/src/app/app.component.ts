@@ -1,4 +1,3 @@
-// src/app/app.component.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink } from '@angular/router';
@@ -7,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { ThemeToggleComponent } from './shared/components/theme-toggle.component';
 import { AuthService } from './core/auth/auth.service';
 import { NavbarComponent } from './layout/navbar.component';
+import { ChatbotComponent } from './shared/components/chatbot.component';
 
 @Component({
   selector: 'app-root',
@@ -18,7 +18,8 @@ import { NavbarComponent } from './layout/navbar.component';
     MatToolbarModule,
     MatButtonModule,
     ThemeToggleComponent,
-    NavbarComponent
+    NavbarComponent,
+    ChatbotComponent
 
   ],
   template: `
@@ -40,6 +41,8 @@ import { NavbarComponent } from './layout/navbar.component';
           </div>
         </div>
       </footer>
+
+      <app-chatbot></app-chatbot>
     </div>
   `,
   styles: [`
