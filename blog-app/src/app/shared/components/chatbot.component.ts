@@ -182,7 +182,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   async startRecording(): Promise<void> {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognitionConstructor: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition; // Explicitly cast to any
       if (SpeechRecognitionConstructor) {
         this.recognition = this.recognition || new SpeechRecognitionConstructor();
         this.recognition.lang = 'en-US'; // Set language
