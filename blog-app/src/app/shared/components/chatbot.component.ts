@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, signal, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal, OnInit, OnDestroy, ElementRef, ViewChild, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,10 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { Router } from '@angular/router';
 import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
+
+// Declare the SpeechRecognition interface
+declare var SpeechRecognition: any;
+declare var webkitSpeechRecognition: any;
 
 @Component({
   selector: 'app-chatbot',
@@ -38,7 +42,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   @Output() isOpenChange = new EventEmitter<boolean>();
   @ViewChild('chatMessagesContainer') private chatMessagesContainer!: ElementRef;
 
-  isOpen = signal(true); // Changed from false to true
+  isOpen = signal(true);
   messages = signal<ChatMessage[]>([]);
   newMessage = '';
   isRecording = signal<boolean>(false);
@@ -50,6 +54,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
+  private ngZone = inject(NgZone); // Inject NgZone
+
+  recognition: any; // SpeechRecognition instance
 
   constructor() { }
 
@@ -70,6 +77,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopRecording(); // Ensure recording is stopped when component is destroyed
+    if (this.recognition) {
+      this.recognition.stop(); // Stop speech recognition if running
+    }
   }
 
   toggleChat(): void {
@@ -171,57 +181,82 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   async startRecording(): Promise<void> {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(stream);
-      this.audioChunks = [];
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      this.recognition = this.recognition || new (SpeechRecognition || webkitSpeechRecognition)();
+      this.recognition.lang = 'en-US'; // Set language
+      this.recognition.interimResults = false; // Get final results only
+      this.recognition.maxAlternatives = 1; // Get single best result
 
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
+      this.recognition.onstart = () => {
+        this.isRecording.set(true);
+        this.newMessage = 'Listening...'; // Update input to indicate listening
+      };
+
+      this.recognition.onspeechstart = () => {
+        this.newMessage = 'Listening (recording)...'; // Update input to indicate recording
+      };
+
+      this.recognition.onspeechend = () => {
+        this.stopRecognition(); // Stop recognition after speech ends
+      };
+
+      this.recognition.onerror = (event: any) => {
+        this.isRecording.set(false);
+        this.newMessage = ''; // Clear "Listening..." message
+        let errorMessage = 'Voice recognition error';
+        if (event.error === 'not-allowed') {
+          errorMessage = 'Microphone access denied. Please check your browser settings.';
+        } else if (event.error === 'no-speech') {
+          errorMessage = 'No speech detected. Please try again.';
         }
+        this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+        console.error('Speech recognition error:', event.error);
       };
 
-      this.mediaRecorder.onstop = () => {
-        // Convert recording to text (in a real app, send to a speech-to-text API)
-        this.processAudioToText();
+      this.recognition.onresult = (event: any) => {
+        this.isRecording.set(false);
+        this.newMessage = ''; // Clear "Listening..." message
 
-        // Stop all tracks to release the microphone
-        stream.getTracks().forEach(track => track.stop());
+        const transcript = event.results[0][0].transcript;
+        this.ngZone.run(() => { // Run inside NgZone for Angular change detection
+          this.newMessage = transcript;
+        });
       };
 
-      this.mediaRecorder.start();
-      this.isRecording.set(true);
+      try {
+        this.recognition.start();
+      } catch (error) {
+        this.isRecording.set(false);
+        this.newMessage = '';
+        this.snackBar.open('Error starting voice recognition.', 'Close', { duration: 5000 });
+        console.error('Error starting speech recognition:', error);
+      }
 
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      this.snackBar.open('Could not access microphone', 'Close', { duration: 3000 });
+    } else {
+      this.snackBar.open('Voice input not supported in this browser.', 'Close', { duration: 5000 });
     }
   }
+
 
   stopRecording(): void {
     if (this.mediaRecorder && this.isRecording()) {
       this.mediaRecorder.stop();
       this.isRecording.set(false);
     }
+    this.stopRecognition();
   }
 
+  stopRecognition(): void {
+    if (this.recognition && this.isRecording()) {
+      this.recognition.stop();
+      this.isRecording.set(false);
+      this.newMessage = ''; // Clear "Listening..." message if recognition is stopped manually
+    }
+  }
+
+
   async processAudioToText(): Promise<void> {
-    // In a production app, you would:
-    // 1. Create a blob from the audio chunks
-    // 2. Send to a speech-to-text API (Google, Azure, etc.)
-    // 3. Get back the transcription
-
-    // For demo, simulate a processing delay and provide dummy text
-    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-
-    // Show processing indicator
-    this.newMessage = 'Processing voice...';
-
-    // Simulate API call delay
-    setTimeout(() => {
-      // In real app, this would be the API response text
-      this.newMessage = 'This is voice transcription result';
-    }, 1500);
+    // This function is now deprecated as we are using Web Speech API directly
+    // You can remove this function if it's no longer needed
   }
 }
