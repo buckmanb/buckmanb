@@ -219,6 +219,9 @@ export class ChatService {
     let botResponse = '';
     let followUpQuestions: string[] = [];
 
+    // Analyze message for topic extraction
+    const normalizedMsg = userMessage.toLowerCase();
+
     // Check for matches in our predefined responses
     for (const response of this.botResponses) {
       if (response.keywords.some(keyword => normalizedMsg.includes(keyword))) {
