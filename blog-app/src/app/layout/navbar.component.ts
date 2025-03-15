@@ -1,20 +1,22 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { AuthService } from '../core/auth/auth.service';
 import { ThemeService } from '../core/services/theme.service';
+import { ChatService } from '../core/services/chat.service';
+
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatDividerModule, MatDivider } from '@angular/material/divider'; // Import MatDividerModule
-import { ThemeToggleComponent } from '../shared/components/theme-toggle.component';
-import { ChatbotComponent } from '../shared/components/chatbot.component';
-import { ChatService } from '../core/services/chat.service';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+
+import { ThemeToggleComponent } from '../shared/components/theme-toggle.component';
 import { SearchBarComponent } from '../shared/components/search-bar/search-bar.component';
 import { SearchDialogComponent } from '../shared/components/search-dialog/search-dialog.component';
 
@@ -29,25 +31,27 @@ import { SearchDialogComponent } from '../shared/components/search-dialog/search
     MatIconModule,
     MatMenuModule,
     MatDividerModule,
-    MatDivider, // Add MatDividerModule to the imports array
-    ThemeToggleComponent,
-    ChatbotComponent,
     MatBadgeModule,
     MatTooltipModule,
+    ThemeToggleComponent,
     SearchBarComponent
   ],
   templateUrl: './navbar.component.html',
-  styleUrls: ['./navbar.component.css']
+  styleUrls: ['./navbar.component.scss']
 })
 export class NavbarComponent implements OnInit {
+  // Injected services
   authService = inject(AuthService);
   themeService = inject(ThemeService);
   private chatService = inject(ChatService);
   private dialog = inject(MatDialog);
+  private router = inject(Router);
   
-  isChatOpen = signal(false);
-  unreadChatMessages = signal(0);
-
+  // Reactive properties
+  isChatOpen = signal<boolean>(false);
+  unreadChatMessages = signal<number>(0);
+  userPhotoUrl = signal<string | null>(null);
+  
   ngOnInit() {
     // Subscribe to chat state
     this.chatService.chatOpen$.subscribe(isOpen => {
@@ -58,6 +62,14 @@ export class NavbarComponent implements OnInit {
     this.chatService.unreadCount$.subscribe(count => {
       this.unreadChatMessages.set(count);
     });
+    
+    // Get user photo if available
+    const user = this.authService.currentUser();
+    if (user && user.photoURL) {
+      this.userPhotoUrl.set(user.photoURL);
+    } else {
+      this.userPhotoUrl.set(null);
+    }
   }
 
   toggleChat(): void {
@@ -77,6 +89,8 @@ export class NavbarComponent implements OnInit {
   }
 
   logout() {
-    this.authService.signOut();
+    this.authService.signOut().then(() => {
+      this.router.navigate(['/']);
+    });
   }
 }

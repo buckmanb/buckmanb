@@ -6,6 +6,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { authorGuard } from './core/guards/author.guard';
 import { GoogleCallbackComponent } from './core/auth/google-callback.component';
+import { ChatPageComponent } from './features/chat/chat-page.component';
 
 export const routes: Routes = [
   // Auth routes
@@ -19,8 +20,8 @@ export const routes: Routes = [
     ]
   },
 
-   // Blog routes
-   {
+  // Blog routes
+  {
     path: 'blog',
     children: [
       { 
@@ -71,7 +72,6 @@ export const routes: Routes = [
       .then(m => m.LEGAL_ROUTES)
   },
 
-
   // Sitemap routes
   {
     path: 'sitemap',
@@ -84,6 +84,12 @@ export const routes: Routes = [
     path: 'sitemap.xml',
     loadComponent: () => import('./features/sitemap/sitemap-xml.component')
       .then(m => m.SitemapXmlComponent)
+  },
+
+  // Chat route
+  {
+    path: 'chat',
+    component: ChatPageComponent
   },
 
   // Home route

@@ -1,0 +1,144 @@
+// Navbar toolbar styles
+.navbar-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 64px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+  }
+  
+  // Site title/logo
+  .site-title {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-right: 24px;
+    white-space: nowrap;
+    
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+  
+  // Main navigation
+  .main-nav {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    
+    a {
+      height: 100%;
+      line-height: 64px;
+      padding: 0 16px;
+      
+      &.active-link {
+        background-color: rgba(255, 255, 255, 0.1);
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background-color: white;
+        }
+      }
+    }
+  }
+  
+  // Flexible spacer
+  .spacer {
+    flex: 1 1 auto;
+  }
+  
+  // Right-side actions container
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+  }
+  
+  // Search button
+  .search-wrapper {
+    button {
+      color: white;
+    }
+  }
+  
+  // Action buttons
+  .action-button {
+    color: white;
+  }
+  
+  // Login button
+  .login-button {
+    color: white;
+    display: flex;
+    align-items: center;
+    
+    mat-icon {
+      margin-right: 4px;
+    }
+  }
+  
+  // User button
+  .user-button {
+    color: white;
+  }
+  
+  // Mobile menu button
+  .mobile-menu-button {
+    display: none;
+    color: white;
+  }
+  
+  // Light theme overrides
+  :host-context(.light-theme) {
+    .navbar-toolbar {
+      color: rgba(0, 0, 0, 0.87);
+      
+      .site-title {
+        color: rgba(0, 0, 0, 0.87);
+      }
+      
+      .main-nav a.active-link::after {
+        background-color: var(--primary-color);
+      }
+    }
+  }
+  
+  // Responsive styles
+  @media (max-width: 960px) {
+    .main-nav {
+      display: none;
+    }
+    
+    .search-wrapper {
+      display: none;
+    }
+    
+    .mobile-menu-button {
+      display: block;
+      margin-left: 8px;
+    }
+  }
+  
+  @media (max-width: 600px) {
+    .site-title span {
+      display: none;
+    }
+    
+    .login-button span {
+      display: none;
+    }
+  }

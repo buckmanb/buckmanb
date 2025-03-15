@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, signal, OnInit, OnDestroy, ElementRef, ViewChild, NgZone } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, inject, signal, OnInit, OnDestroy, ElementRef, ViewChild, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -40,12 +40,11 @@ declare var webkitSpeechRecognition: any;
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.scss']
 })
-export class ChatbotComponent implements OnInit, OnDestroy {
-  @Input() blogPostId?: string;
+export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
+  @Input() isOpen = false;
   @Output() isOpenChange = new EventEmitter<boolean>();
   @ViewChild('chatMessagesContainer') private chatMessagesContainer!: ElementRef;
 
-  isOpen = signal(true);
   messages = signal<ChatMessage[]>([]);
   newMessage = '';
   isRecording = signal<boolean>(false);
@@ -57,15 +56,19 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   protected authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
-  private ngZone = inject(NgZone); // Inject NgZone
+  private ngZone = inject(NgZone);
   private blogService = inject(BlogService);
   private errorService = inject(ErrorService);
 
   recognition: any; // SpeechRecognition instance
 
-  constructor() { }
+  constructor() { 
+    console.log('Chatbot component initialized');
+  }
 
   ngOnInit(): void {
+    console.log('Chatbot ngOnInit, isOpen:', this.isOpen);
+    
     this.chatService.messages$.subscribe(messages => {
       this.messages.set(messages);
 
@@ -78,6 +81,21 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       // Scroll to bottom on new messages
       setTimeout(() => this.scrollToBottom(), 100);
     });
+    
+    // Update chat service with initial state
+    if (this.isOpen) {
+      this.chatService.setChatOpen(true);
+    }
+  }
+  
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log('Chatbot ngOnChanges:', changes);
+    
+    // React to isOpen changes from parent
+    if (changes['isOpen'] && !changes['isOpen'].firstChange) {
+      console.log('isOpen changed to:', this.isOpen);
+      this.updateChatVisibility();
+    }
   }
 
   ngOnDestroy(): void {
@@ -86,18 +104,21 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       this.recognition.stop(); // Stop speech recognition if running
     }
   }
+  
+  // Update the visibility class based on isOpen
+  updateChatVisibility(): void {
+    if (this.isOpen) {
+      setTimeout(() => this.scrollToBottom(), 300);
+    }
+  }
 
   toggleChat(): void {
-    this.isOpen.update(value => !value);
-    this.chatService.setChatOpen(this.isOpen());
-    this.isOpenChange.emit(this.isOpen());
-
-    // Track open/close events
-    this.chatService.trackEvent(
-      this.isOpen() ? 'chat_opened' : 'chat_closed'
-    );
-
-    if (this.isOpen()) {
+    this.isOpen = !this.isOpen;
+    this.isOpenChange.emit(this.isOpen);
+    this.chatService.setChatOpen(this.isOpen);
+    console.log('Chat toggled. New state:', this.isOpen);
+    
+    if (this.isOpen) {
       setTimeout(() => this.scrollToBottom(), 300);
     }
   }
@@ -145,7 +166,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     if (this.chatMessagesContainer) {
       try {
         this.chatMessagesContainer.nativeElement.scrollTop = this.chatMessagesContainer.nativeElement.scrollHeight;
-      } catch(err) { }
+      } catch(err) { 
+        console.error('Error scrolling to bottom:', err);
+      }
     }
   }
 
@@ -310,11 +333,6 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           this.newMessage = 'Listening (recording)...'; // Update input to indicate recording
         };
 
-        // REMOVE onspeechend handler to prevent premature stop
-        // this.recognition.onspeechend = () => {
-        //   this.stopRecognition(); // Stop recognition after speech ends
-        // };
-
         this.recognition.onerror = (event: any) => {
           this.isRecording.set(false);
           this.newMessage = ''; // Clear "Listening..." message
@@ -355,8 +373,6 @@ export class ChatbotComponent implements OnInit, OnDestroy {
               this.snackBar.open('Microphone access denied. Please check your browser settings and allow microphone access for this site.', 'Close', { duration: 5000 });
             }
           });
-
-
         } catch (error) {
           this.isRecording.set(false);
           this.newMessage = '';
@@ -366,13 +382,10 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       } else {
         this.snackBar.open('Voice input not supported in this browser.', 'Close', { duration: 5000 });
       }
-
-
     } else {
       this.snackBar.open('Voice input not supported in this browser.', 'Close', { duration: 5000 });
     }
   }
-
 
   stopRecording(): void {
     if (this.mediaRecorder && this.isRecording()) {
@@ -389,7 +402,6 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       this.newMessage = ''; // Clear "Listening..." message if recognition is stopped manually
     }
   }
-
 
   async processAudioToText(): Promise<void> {
     // This function is now deprecated as we are using Web Speech API directly

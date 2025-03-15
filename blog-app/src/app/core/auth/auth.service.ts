@@ -462,6 +462,18 @@ export class AuthService  {
     return ['author', 'admin'].includes(profile.role);
   }
 
+  IsAdmin(): boolean {
+    const user = this.currentUser();
+    const profile = this.profile();
+
+    if (!user || !profile) {
+      return false;
+    }
+
+    return ['admin'].includes(profile.role);
+  }
+
+
   googleLogin()
   {
     this.router.navigate(['/auth/login']);

@@ -1,275 +1,257 @@
 /* src/styles.scss */
 
-// Import theme styles
-@import './styles/theme.scss';
+/* Angular Material Theme Setup - This is a simplified version */
+@use '@angular/material' as mat;
 
-// Background image applied to the body
-body {
-  height: 100%;
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
-  background-image: url('../public/BeausBlog.png');
-  background-size: cover;
-  background-attachment: fixed;
-  background-position: center;
-  background-repeat: no-repeat;
-  position: relative;
+// Define the palettes
+$primary: (
+  50: #e8eaf6,
+  100: #c5cae9,
+  200: #9fa8da,
+  300: #7986cb,
+  400: #5c6bc0,
+  500: #3f51b5,  // Primary color
+  600: #3949ab,
+  700: #303f9f,
+  800: #283593,
+  900: #1a237e,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: white,
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  )
+);
+
+$accent: (
+  50: #fce4ec,
+  100: #f8bbd0,
+  200: #f48fb1,
+  300: #f06292,
+  400: #ec407a,
+  500: #e91e63,  // Accent color
+  600: #d81b60,
+  700: #c2185b,
+  800: #ad1457,
+  900: #880e4f,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  )
+);
+
+$warn: (
+  50: #ffebee,
+  100: #ffcdd2,
+  200: #ef9a9a,
+  300: #e57373,
+  400: #ef5350,
+  500: #f44336,  // Warn color
+  600: #e53935,
+  700: #d32f2f,
+  800: #c62828,
+  900: #b71c1c,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  )
+);
+
+// Root CSS variables
+:root {
+  // Primary colors
+  --primary-color: #3f51b5;
+  --primary-color-lighter: #9fa8da;
+  --primary-color-darker: #303f9f;
+  
+  // Accent colors
+  --accent-color: #e91e63;
+  --accent-color-lighter: #f48fb1;
+  --accent-color-darker: #c2185b;
+  
+  // Warning colors
+  --warn-color: #f44336;
+  --warn-color-lighter: #ef9a9a;
+  --warn-color-darker: #d32f2f;
+  
+  // Success color
+  --success-color: #4caf50;
+  
+  // Light theme variables
+  --background-color: #f5f5f5;
+  --card-background: #ffffff;
+  --surface-color: #ffffff;
+  --surface-color-darker: #e0e0e0;
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-hint: rgba(0, 0, 0, 0.38);
+  --divider-color: rgba(0, 0, 0, 0.12);
+  --border-color: rgba(0, 0, 0, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  
+  // Shadows
+  --shadow-1: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12);
+  --shadow-2: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+  --shadow-3: 0 3px 3px -2px rgba(0,0,0,.2), 0 3px 4px 0 rgba(0,0,0,.14), 0 1px 8px 0 rgba(0,0,0,.12);
 }
 
+// Dark theme
+.dark-theme {
+  --background-color: #121212;
+  --card-background: #1e1e1e;
+  --surface-color: #282828;
+  --surface-color-darker: #333333;
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-hint: rgba(255, 255, 255, 0.38);
+  --divider-color: rgba(255, 255, 255, 0.12);
+  --border-color: rgba(255, 255, 255, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  
+  // Darker shadows for dark theme
+  --shadow-1: 0 2px 1px -1px rgba(0,0,0,.5), 0 1px 1px 0 rgba(0,0,0,.4), 0 1px 3px 0 rgba(0,0,0,.3);
+  --shadow-2: 0 3px 1px -2px rgba(0,0,0,.5), 0 2px 2px 0 rgba(0,0,0,.4), 0 1px 5px 0 rgba(0,0,0,.3);
+  --shadow-3: 0 3px 3px -2px rgba(0,0,0,.5), 0 3px 4px 0 rgba(0,0,0,.4), 0 1px 8px 0 rgba(0,0,0,.3);
+}
+
+// Basic resets and global styles
 html, body {
   height: 100%;
   margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-// Utility classes
-.text-center { text-align: center; }
-.w-full { width: 100%; }
-.h-full { height: 100%; }
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.gap-4 { gap: 1rem; }
-
-// Animation classes
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
+body {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  margin: 0;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-// Material Design elevation classes
-.elevation-1 { box-shadow: var(--elevation-1); }
-.elevation-2 { box-shadow: var(--elevation-2); }
-.elevation-3 { box-shadow: var(--elevation-3); }
-
-// Card styles
-.custom-card {
-  background-color: var(--card-background);
-  border-radius: 8px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--elevation-3);
-  }
-}
-
-// Button styles
-.action-button {
-  transition: all 0.2s ease;
-  
-  &:hover {
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-// Form styles
-.form-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-// Loading indicator styles
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+// App container
+.app-container {
+  min-height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+  flex-direction: column;
 }
 
-// Snackbar custom styles
-.success-snackbar {
-  background-color: var(--success-color);
-  color: white;
-}
-
-.error-snackbar {
-  background-color: var(--error-color);
-  color: white;
-}
-
-// Responsive container
-.container {
-  width: 100%;
+// Main content area
+.app-content {
+  margin-top: 64px; // Height of the toolbar
+  flex: 1;
+  padding: 20px;
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   box-sizing: border-box;
 }
 
-// Media queries
-@media (max-width: 768px) {
-  .container {
-    padding: 0 0.5rem;
+// Material card overrides
+.mat-mdc-card {
+  background-color: var(--card-background);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-1);
+  
+  .mat-mdc-card-title {
+    color: var(--text-primary);
   }
   
-  .form-container {
-    padding: 1rem;
+  .mat-mdc-card-subtitle {
+    color: var(--text-secondary);
   }
 }
 
-// Custom scrollbar
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--surface-color);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 4px;
+// Material form field overrides
+.mat-mdc-form-field {
+  .mat-mdc-floating-label {
+    color: var(--text-secondary);
+  }
   
-  &:hover {
-    background: var(--primary-darker);
+  .mat-mdc-input-element {
+    color: var(--text-primary);
   }
 }
 
-/* Editor content styles */
-.NgxEditor__Content {
-  font-family: 'Roboto', sans-serif;
-  line-height: 1.6;
-  color: var(--text-primary);
+// Utility spacing classes
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; }
+.mt-5 { margin-top: 3rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 1.5rem; }
+.mb-5 { margin-bottom: 3rem; }
+
+.ml-1 { margin-left: 0.25rem; }
+.ml-2 { margin-left: 0.5rem; }
+.ml-3 { margin-left: 1rem; }
+.ml-4 { margin-left: 1.5rem; }
+.ml-5 { margin-left: 3rem; }
+
+.mr-1 { margin-right: 0.25rem; }
+.mr-2 { margin-right: 0.5rem; }
+.mr-3 { margin-right: 1rem; }
+.mr-4 { margin-right: 1.5rem; }
+.mr-5 { margin-right: 3rem; }
+
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 1rem; }
+.p-4 { padding: 1.5rem; }
+.p-5 { padding: 3rem; }
+
+// Responsive classes
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+
+@media (min-width: 576px) {
+  .d-sm-none { display: none !important; }
+  .d-sm-block { display: block !important; }
+  .d-sm-flex { display: flex !important; }
 }
 
-.NgxEditor__Content h1 {
-  font-size: 2rem;
-  margin: 1.5rem 0 1rem;
+@media (min-width: 768px) {
+  .d-md-none { display: none !important; }
+  .d-md-block { display: block !important; }
+  .d-md-flex { display: flex !important; }
 }
 
-.NgxEditor__Content h2 {
-  font-size: 1.75rem;
-  margin: 1.25rem 0 0.75rem;
+@media (min-width: 992px) {
+  .d-lg-none { display: none !important; }
+  .d-lg-block { display: block !important; }
+  .d-lg-flex { display: flex !important; }
 }
 
-.NgxEditor__Content h3 {
-  font-size: 1.5rem;
-  margin: 1rem 0 0.5rem;
-}
-
-.NgxEditor__Content h4 {
-  font-size: 1.25rem;
-  margin: 0.75rem 0 0.5rem;
-}
-
-.NgxEditor__Content p {
-  margin: 0 0 1rem;
-}
-
-.NgxEditor__Content a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.NgxEditor__Content a:hover {
-  text-decoration: underline;
-}
-
-.NgxEditor__Content blockquote {
-  border-left: 4px solid var(--primary-lighter);
-  padding-left: 1rem;
-  margin-left: 0;
-  color: var(--text-secondary);
-}
-
-.NgxEditor__Content ul, 
-.NgxEditor__Content ol {
-  margin: 0 0 1rem 1.5rem;
-}
-
-.NgxEditor__Content pre {
-  background-color: var(--surface-color);
-  padding: 1rem;
-  border-radius: 4px;
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-
-.NgxEditor__Content code {
-  font-family: 'Courier New', Courier, monospace;
-  background-color: var(--surface-color);
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-}
-
-.NgxEditor__Content pre code {
-  padding: 0;
-  background-color: transparent;
-}
-
-.NgxEditor__Content img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 1rem auto;
-}
-
-.NgxEditor__Content table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1rem;
-}
-
-.NgxEditor__Content th,
-.NgxEditor__Content td {
-  border: 1px solid var(--border-color);
-  padding: 0.5rem;
-}
-
-.NgxEditor__Content th {
-  background-color: var(--surface-color);
-}
-
-/* Preview content styles - apply the same styles as editor content */
-.preview-content {
-  font-family: 'Roboto', sans-serif;
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-
-.preview-content h1,
-.preview-content h2,
-.preview-content h3,
-.preview-content h4,
-.preview-content p,
-.preview-content a,
-.preview-content blockquote,
-.preview-content ul,
-.preview-content ol,
-.preview-content pre,
-.preview-content code,
-.preview-content img,
-.preview-content table,
-.preview-content th,
-.preview-content td {
-  /* Inherit same styles as editor content */
-}
-
-/* Prism.js syntax highlighting customization */
-code[class*="language-"],
-pre[class*="language-"] {
-  text-shadow: none;
-  border-radius: 4px;
-}
-
-/* Dark theme adjustments */
-.dark-theme code[class*="language-"],
-.dark-theme pre[class*="language-"] {
-  background-color: #2d2d2d !important;
+@media (min-width: 1200px) {
+  .d-xl-none { display: none !important; }
+  .d-xl-block { display: block !important; }
+  .d-xl-flex { display: flex !important; }
 }
