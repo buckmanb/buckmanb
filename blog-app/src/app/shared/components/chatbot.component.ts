@@ -235,7 +235,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
         try {
           // Check for microphone permissions before starting
-          navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+          navigator.permissions.query({ name: 'microphone' as PermissionName }).then(permissionStatus => {
             if (permissionStatus.state === 'granted') {
               this.recognition.start(); // Start recognition if permission is already granted
             } else if (permissionStatus.state === 'prompt') {
