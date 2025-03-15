@@ -224,9 +224,6 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         };
 
         this.recognition.onresult = (event: any) => {
-          this.isRecording.set(false);
-          this.newMessage = ''; // Clear "Listening..." message
-
           const transcript = event.results[0][0].transcript;
           this.ngZone.run(() => { // Run inside NgZone for Angular change detection
             this.newMessage = transcript;
