@@ -11,6 +11,8 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/d
 import { ChatService, ChatMessage } from '../../core/services/chat.service';
 import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
+import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
   selector: 'app-chatbot',
@@ -24,7 +26,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
     MatFormFieldModule,
     MatBadgeModule,
     MatTooltipModule,
-    MatDialogModule
+    MatDialogModule,
+    MatMenuModule
   ],
   template: `
     <div class="chatbot-container">
@@ -71,17 +74,56 @@ import { MatSnackBar } from '@angular/material/snack-bar';
                   <span></span>
                 </div>
               } @else {
-                <div class="message">
-                  {{ message.content }}
-                  @if (message.isUser) {
-                    <button mat-icon-button class="delete-btn" (click)="deleteMessage(message.id)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
+                <div class="message" [ngClass]="{'rich-content': message.contentType === 'blog-preview'}">
+                  @if (message.contentType === 'blog-preview' && message.blogPreview) {
+                    <div class="blog-preview" (click)="navigateToBlog(message.blogPreview?.id)">
+                      @if (message.blogPreview.imageUrl) {
+                        <img [src]="message.blogPreview.imageUrl" alt="Blog preview">
+                      }
+                      <div class="preview-content">
+                        <h4>{{ message.blogPreview.title }}</h4>
+                        <p>{{ message.blogPreview.excerpt }}</p>
+                      </div>
+                    </div>
+                  } @else {
+                    {{ message.content }}
+                    @if (message.isUser) {
+                      <button mat-icon-button class="delete-btn" (click)="deleteMessage(message.id)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    } @else {
+                      <div class="feedback-buttons">
+                        <button mat-icon-button matTooltip="Helpful" (click)="provideFeedback(message.id, 'helpful')">
+                          <mat-icon>thumb_up</mat-icon>
+                        </button>
+                        <button mat-icon-button matTooltip="Not helpful" (click)="provideFeedback(message.id, 'not_helpful')">
+                          <mat-icon>thumb_down</mat-icon>
+                        </button>
+                      </div>
+                    }
                   }
                 </div>
+                @if (message.translatedFrom) {
+                  <div class="message-translation-info">
+                    Translated from: {{ message.translatedFrom }}
+                  </div>
+                }
                 <div class="message-time">
                   {{ formatTimestamp(message.timestamp) }}
                 </div>
+                @if (!message.isTyping && !message.originalMessageId) {
+                  <button mat-icon-button class="translate-btn" [matMenuTriggerFor]="translateMenu">
+                    <mat-icon>translate</mat-icon>
+                  </button>
+                  
+                  <mat-menu #translateMenu="matMenu">
+                    <button mat-menu-item (click)="translateMessage(message.id, 'es')">Spanish</button>
+                    <button mat-menu-item (click)="translateMessage(message.id, 'fr')">French</button>
+                    <button mat-menu-item (click)="translateMessage(message.id, 'de')">German</button>
+                    <button mat-menu-item (click)="translateMessage(message.id, 'zh')">Chinese</button>
+                    <button mat-menu-item (click)="translateMessage(message.id, 'ja')">Japanese</button>
+                  </mat-menu>
+                }
               }
             </div>
           }
@@ -104,6 +146,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
               [(ngModel)]="newMessage"
               (keyup.enter)="sendMessage()">
           </mat-form-field>
+          
+          <button mat-icon-button color="primary" 
+                  (click)="toggleVoiceInput()" 
+                  [class.recording]="isRecording()"
+                  matTooltip="Voice input">
+            <mat-icon>mic</mat-icon>
+          </button>
+          
           <button mat-icon-button color="primary" (click)="sendMessage()" [disabled]="!newMessage.trim()">
             <mat-icon>send</mat-icon>
           </button>
@@ -320,12 +370,116 @@ import { MatSnackBar } from '@angular/material/snack-bar';
         opacity: 0.4;
       }
     }
+    
+    .rich-content {
+      padding: 0 !important;
+      overflow: hidden;
+    }
+
+    .blog-preview {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .blog-preview:hover {
+      transform: translateY(-2px);
+    }
+
+    .blog-preview img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+    }
+
+    .preview-content {
+      padding: 12px;
+    }
+
+    .preview-content h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .preview-content p {
+      margin: 0;
+      font-size: 12px;
+      opacity: 0.8;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .feedback-buttons {
+      position: absolute;
+      top: -10px;
+      right: 30px;
+      transform: scale(0.7);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .message:hover .feedback-buttons {
+      opacity: 0.7;
+    }
+
+    .feedback-buttons:hover {
+      opacity: 1 !important;
+    }
+    
+    .translate-btn {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      transform: scale(0.7);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .message:hover .translate-btn {
+      opacity: 0.7;
+    }
+
+    .translate-btn:hover {
+      opacity: 1 !important;
+    }
+
+    .message-translation-info {
+      font-size: 11px;
+      font-style: italic;
+      opacity: 0.7;
+      margin-top: 4px;
+      margin-left: 5px;
+    }
+    
+    .recording {
+      color: red;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
   `]
 })
 export class ChatbotComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
   
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
   
@@ -336,6 +490,11 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   
   // Signal to track the last bot message
   lastBotMessage = signal<ChatMessage | null>(null);
+  
+  // Voice Input
+  isRecording = signal<boolean>(false);
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
   
   ngOnInit(): void {
     // Subscribe to messages
@@ -365,6 +524,11 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   toggleChat(): void {
     this.isOpen.update(value => !value);
     this.chatService.setChatOpen(this.isOpen());
+    
+    // Track open/close events
+    this.chatService.trackEvent(
+      this.isOpen() ? 'chat_opened' : 'chat_closed'
+    );
     
     if (this.isOpen()) {
       setTimeout(() => this.scrollToBottom(), 300);
@@ -429,6 +593,95 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
       const element = this.messageContainer.nativeElement;
       element.scrollTop = element.scrollHeight;
     }
+  }
+  
+  provideFeedback(messageId: string, rating: 'helpful' | 'not_helpful'): void {
+    this.chatService.provideFeedback(messageId, rating);
+    
+    // Show a snackbar or some visual confirmation
+    this.snackBar.open(
+      `Thank you for your feedback!`, 
+      'Close', 
+      { duration: 3000 }
+    );
+  }
+  
+  async translateMessage(messageId: string, language: string): Promise<void> {
+    try {
+      await this.chatService.translateMessage(messageId, language);
+    } catch (error) {
+      console.error('Error translating message:', error);
+    }
+  }
+  
+  navigateToBlog(blogId?: string): void {
+    if (!blogId) return;
+    
+    this.router.navigate(['/blog', blogId]);
+    this.toggleChat(); // Close the chat window
+  }
+  
+  async toggleVoiceInput(): Promise<void> {
+    if (this.isRecording()) {
+      this.stopRecording();
+    } else {
+      await this.startRecording();
+    }
+  }
+  
+  async startRecording(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+      
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+      
+      this.mediaRecorder.onstop = () => {
+        // Convert recording to text (in a real app, send to a speech-to-text API)
+        this.processAudioToText();
+        
+        // Stop all tracks to release the microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      this.mediaRecorder.start();
+      this.isRecording.set(true);
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      this.snackBar.open('Could not access microphone', 'Close', { duration: 3000 });
+    }
+  }
+  
+  stopRecording(): void {
+    if (this.mediaRecorder && this.isRecording()) {
+      this.mediaRecorder.stop();
+      this.isRecording.set(false);
+    }
+  }
+  
+  async processAudioToText(): Promise<void> {
+    // In a production app, you would:
+    // 1. Create a blob from the audio chunks
+    // 2. Send to a speech-to-text API (Google, Azure, etc.)
+    // 3. Get back the transcription
+    
+    // For demo, simulate a processing delay and provide dummy text
+    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+    
+    // Show processing indicator
+    this.newMessage = 'Processing voice...';
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      // In real app, this would be the API response text
+      this.newMessage = 'This is voice transcription result';
+    }, 1500);
   }
 }
 
