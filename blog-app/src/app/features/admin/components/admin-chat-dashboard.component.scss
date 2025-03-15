@@ -1,0 +1,96 @@
+.container {
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+}
+
+.analytics-dashboard {
+  padding: 16px 0;
+}
+
+.analytics-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.analytics-cards mat-card {
+  flex: 1;
+  text-align: center;
+}
+
+.analytics-value {
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.analytics-label {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.conversation-container {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.message-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+}
+
+.user-message {
+  align-self: flex-end;
+}
+
+.bot-message {
+  align-self: flex-start;
+}
+
+.message {
+  padding: 10px 15px;
+  border-radius: 18px;
+  word-break: break-word;
+}
+
+.user-message .message {
+  background-color: var(--primary-color);
+  color: white;
+  border-bottom-right-radius: 5px;
+}
+
+.bot-message .message {
+  background-color: var(--surface-color);
+  border-bottom-left-radius: 5px;
+}
+
+.message-time {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.chart-container {
+  width: 400px;
+  height: 300px;
+  margin: 20px auto; /* Center the chart */
+  position: relative; /* Required for Chart.js to work properly */
+}
