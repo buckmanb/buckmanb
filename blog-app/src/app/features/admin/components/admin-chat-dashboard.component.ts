@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Firestore, collection, query, orderBy, limit, getDocs, where, Timestamp } from '@angular/fire/firestore';
 
 import { ChatMessage, ChatFeedback } from '../../../core/services/chat.service';
+import { Chart, registerables } from 'chart.js';
 
 @Component({
   selector: 'app-admin-chat-dashboard',
@@ -157,6 +158,16 @@ import { ChatMessage, ChatFeedback } from '../../../core/services/chat.service';
                 </table>
               </div>
             </mat-tab>
+            
+            <mat-tab label="Usage Patterns">
+              <div class="analytics-dashboard">
+                <h3>Session Durations</h3>
+                <canvas id="sessionDurationChart" width="400" height="200"></canvas>
+                
+                <h3>Messages per Session</h3>
+                <canvas id="messagesPerSessionChart" width="400" height="200"></canvas>
+              </div>
+            </mat-tab>
           </mat-tab-group>
         </mat-card-content>
       </mat-card>
@@ -281,7 +292,7 @@ import { ChatMessage, ChatFeedback } from '../../../core/services/chat.service';
     }
   `]
 })
-export class AdminChatDashboardComponent implements OnInit {
+export class AdminChatDashboardComponent implements OnInit, AfterViewInit {
   private firestore = inject(Firestore);
   
   // Table data
@@ -302,10 +313,26 @@ export class AdminChatDashboardComponent implements OnInit {
   // Selected session for viewing
   selectedSessionId: string | null = null;
   
+  // Chart data
+  sessionDurations: number[] = [];
+  messagesPerSession: number[] = [];
+  
+  // Charts
+  sessionDurationChart: any;
+  messagesPerSessionChart: any;
+  
+  constructor() {
+    Chart.register(...registerables);
+  }
+  
   ngOnInit(): void {
     this.loadRecentSessions();
     this.loadFeedback();
     this.loadAnalytics();
+  }
+  
+  ngAfterViewInit(): void {
+    this.loadUsagePatterns();
   }
   
   async loadRecentSessions(): Promise<void> {
@@ -436,6 +463,110 @@ export class AdminChatDashboardComponent implements OnInit {
       
     } catch (error) {
       console.error('Error loading analytics:', error);
+    }
+  }
+  
+  async loadUsagePatterns(): Promise<void> {
+    try {
+      const messagesRef = collection(this.firestore, 'chatMessages');
+      const snapshot = await getDocs(messagesRef);
+      
+      const sessionData: { [sessionId: string]: { startTime: number; endTime: number; messageCount: number } } = {};
+      
+      snapshot.docs.forEach(doc => {
+        const message = doc.data() as ChatMessage;
+        const sessionId = message.sessionId;
+        const timestamp = message.timestamp instanceof Timestamp ? message.timestamp.toMillis() : new Date(message.timestamp).getTime();
+        
+        if (!sessionData[sessionId]) {
+          sessionData[sessionId] = {
+            startTime: timestamp,
+            endTime: timestamp,
+            messageCount: 1
+          };
+        } else {
+          sessionData[sessionId].startTime = Math.min(sessionData[sessionId].startTime, timestamp);
+          sessionData[sessionId].endTime = Math.max(sessionData[sessionId].endTime, timestamp);
+          sessionData[sessionId].messageCount++;
+        }
+      });
+      
+      // Process session data for charts
+      this.sessionDurations = Object.values(sessionData).map(session => (session.endTime - session.startTime) / (60 * 1000)); // in minutes
+      this.messagesPerSession = Object.values(sessionData).map(session => session.messageCount);
+      
+      this.renderCharts();
+      
+    } catch (error) {
+      console.error('Error loading usage patterns:', error);
+    }
+  }
+  
+  renderCharts(): void {
+    if (this.sessionDurationChart) {
+      this.sessionDurationChart.destroy();
+    }
+    
+    if (this.messagesPerSessionChart) {
+      this.messagesPerSessionChart.destroy();
+    }
+    
+    // Session Duration Chart
+    const sessionDurationCanvas = document.getElementById('sessionDurationChart') as HTMLCanvasElement;
+    if (sessionDurationCanvas) {
+      this.sessionDurationChart = new Chart(sessionDurationCanvas, {
+        type: 'bar',
+        data: {
+          labels: this.sessionDurations.map((_, index) => `Session ${index + 1}`),
+          datasets: [{
+            label: 'Session Duration (minutes)',
+            data: this.sessionDurations,
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Duration (minutes)'
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Messages Per Session Chart
+    const messagesPerSessionCanvas = document.getElementById('messagesPerSessionChart') as HTMLCanvasElement;
+    if (messagesPerSessionCanvas) {
+      this.messagesPerSessionChart = new Chart(messagesPerSessionCanvas, {
+        type: 'bar',
+        data: {
+          labels: this.messagesPerSession.map((_, index) => `Session ${index + 1}`),
+          datasets: [{
+            label: 'Messages per Session',
+            data: this.messagesPerSession,
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Messages'
+              }
+            }
+          }
+        }
+      });
     }
   }
   
