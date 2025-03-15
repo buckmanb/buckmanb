@@ -168,9 +168,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   navigateToBlog(blogId?: string): void {
-    if (!blogPostId) return;
+    if (!blogId) return;
 
-    this.router.navigate(['/blog', blogPostId]);
+    this.router.navigate(['/blog', blogId]);
     this.toggleChat(); // Close the chat window
   }
 
