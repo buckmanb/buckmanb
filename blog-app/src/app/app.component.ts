@@ -20,7 +20,6 @@ import { ChatbotComponent } from './shared/components/chatbot.component';
     ThemeToggleComponent,
     NavbarComponent,
     ChatbotComponent
-
   ],
   template: `
     <div class="app-container">
