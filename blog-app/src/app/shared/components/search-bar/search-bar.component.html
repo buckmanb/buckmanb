@@ -1,0 +1,66 @@
+<div class="search-container">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search</mat-label>
+    <input
+      matInput
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onSearchChange($event)"
+      [matAutocomplete]="auto"
+      placeholder="Search posts, tags, authors...">
+    <mat-icon matSuffix>search</mat-icon>
+    <button
+      *ngIf="searchTerm"
+      matSuffix
+      mat-icon-button
+      aria-label="Clear"
+      (click)="clearSearch()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event)">
+    <mat-option *ngIf="isSearching" class="searching-option">
+      <mat-icon class="searching-icon">hourglass_empty</mat-icon>
+      Searching...
+    </mat-option>
+
+    <ng-container *ngIf="!isSearching">
+      <mat-option
+        *ngFor="let result of searchResults"
+        [value]="result.title"
+        [routerLink]="getRouterLink(result)">
+        <div class="search-result-item">
+          <div class="search-result-icon" [ngClass]="result.type">
+            <mat-icon>{{ getIconForType(result.type) }}</mat-icon>
+          </div>
+          <div class="search-result-content">
+            <div class="search-result-title">{{ result.title }}</div>
+            <div class="search-result-subtitle" *ngIf="result.subtitle">
+              {{ result.subtitle }}
+            </div>
+          </div>
+        </div>
+      </mat-option>
+
+      <mat-option
+        *ngIf="searchTerm && searchResults.length === 0"
+        [disabled]="true"
+        class="no-results-option">
+        No results found
+      </mat-option>
+
+      <mat-option *ngIf="!searchTerm" [disabled]="true" class="popular-searches-label">
+        Popular searches
+      </mat-option>
+
+      <mat-option
+        *ngIf="!searchTerm"
+        *ngFor="let term of popularSearchTerms"
+        [value]="term"
+        class="popular-search-option">
+        <mat-icon>trending_up</mat-icon>
+        {{ term }}
+      </mat-option>
+    </ng-container>
+  </mat-autocomplete>
+</div>
