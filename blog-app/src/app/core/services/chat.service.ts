@@ -11,6 +11,13 @@ export interface ChatMessage {
   userId?: string;
   sessionId: string;
   read?: boolean;
+  followUpQuestions?: string[]; // New field
+}
+
+interface BotResponse {
+  keywords: string[];
+  response: string;
+  followUpQuestions?: string[];
 }
 
 @Injectable({
@@ -28,6 +35,48 @@ export class ChatService {
 
   private sessionId: string = '';
   private chatOpen = false;
+
+  private botResponses: BotResponse[] = [
+    {
+      keywords: ['hello', 'hi', 'hey', 'greetings'],
+      response: 'Hello! How can I help you today?',
+      followUpQuestions: [
+        'Are you looking for specific blog posts?',
+        'Do you want to know more about the author?',
+        'Need help finding something?'
+      ]
+    },
+    {
+      keywords: ['blog', 'article', 'post'],
+      response: 'You can find all our blog posts on the home page. We cover topics like Angular, Firebase, and web development.',
+      followUpQuestions: [
+        'Are you interested in a specific topic?',
+        'Would you like to see our most popular posts?'
+      ]
+    },
+    {
+      keywords: ['login', 'signin', 'signup', 'register', 'account'],
+      response: 'You can create an account or sign in by clicking the "Login" button in the top navigation bar.',
+      followUpQuestions: [
+        'Are you having trouble with authentication?',
+        'Do you need to reset your password?'
+      ]
+    },
+    {
+      keywords: ['contact', 'email', 'reach'],
+      response: 'You can contact us through our contact form or email directly at info@example.com',
+      followUpQuestions: [
+        'Do you have a specific question I might help with?'
+      ]
+    },
+    {
+      keywords: ['search', 'find', 'looking'],
+      response: 'You can use the search box at the top of the page to find specific content.',
+      followUpQuestions: [
+        'What topic are you interested in?'
+      ]
+    }
+  ];
 
   constructor() {
     this.initSession();
@@ -135,21 +184,30 @@ export class ChatService {
   }
 
   private async generateBotResponse(userMessage: string): Promise<void> {
-    // Simple bot logic - in a real app, you'd call an API (e.g., OpenAI, Dialogflow)
-    let botResponse = '';
-
-    // Very basic response logic
+    // Normalize message for better matching
     const normalizedMsg = userMessage.toLowerCase();
-    if (normalizedMsg.includes('hello') || normalizedMsg.includes('hi')) {
-      botResponse = 'Hello! How can I help you today?';
-    } else if (normalizedMsg.includes('blog') || normalizedMsg.includes('article')) {
-      botResponse = 'You can find all our blog posts on the home page. Is there a specific topic you\'re interested in?';
-    } else if (normalizedMsg.includes('contact') || normalizedMsg.includes('email')) {
-      botResponse = 'You can contact us through the contact page or email us at info@example.com';
-    } else if (normalizedMsg.includes('login') || normalizedMsg.includes('sign')) {
-      botResponse = 'You can login or create an account through our authentication page.';
-    } else {
-      botResponse = 'I\'m not sure I understand. Could you rephrase your question?';
+
+    // Try to find a matching response
+    let botResponse = '';
+    let followUpQuestions: string[] = [];
+
+    // Check for matches in our predefined responses
+    for (const response of this.botResponses) {
+      if (response.keywords.some(keyword => normalizedMsg.includes(keyword))) {
+        botResponse = response.response;
+        followUpQuestions = response.followUpQuestions || [];
+        break;
+      }
+    }
+
+    // Fallback response if no match found
+    if (!botResponse) {
+      botResponse = "I'm not sure I understand. Could you rephrase your question?";
+      followUpQuestions = [
+        "Are you looking for blog posts?",
+        "Do you need help with the website?",
+        "Would you like to contact us?"
+      ];
     }
 
     const botMessage: ChatMessage = {
@@ -157,7 +215,8 @@ export class ChatService {
       timestamp: Timestamp.now(),
       isUser: false,
       sessionId: this.sessionId,
-      read: this.chatOpen // Mark as read if chat is open
+      read: this.chatOpen,
+      followUpQuestions
     };
 
     // Add to Firestore
@@ -167,17 +226,17 @@ export class ChatService {
   async deleteMessage(messageId: string): Promise<void> {
     try {
       const user = this.authService.currentUser();
-      
+
       // Get the message first to check permissions
       const messageRef = doc(this.firestore, 'chatMessages', messageId);
       const messageSnap = await getDoc(messageRef);
-      
+
       if (!messageSnap.exists()) {
         throw new Error('Message not found');
       }
-      
+
       const message = messageSnap.data() as ChatMessage;
-      
+
       // Only allow users to delete their own messages
       if (message.isUser && user?.uid === message.userId) {
         await deleteDoc(messageRef);
