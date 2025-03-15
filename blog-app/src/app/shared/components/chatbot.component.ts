@@ -198,9 +198,10 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           this.newMessage = 'Listening (recording)...'; // Update input to indicate recording
         };
 
-        this.recognition.onspeechend = () => {
-          this.stopRecognition(); // Stop recognition after speech ends
-        };
+        // REMOVE onspeechend handler to prevent premature stop
+        // this.recognition.onspeechend = () => {
+        //   this.stopRecognition(); // Stop recognition after speech ends
+        // };
 
         this.recognition.onerror = (event: any) => {
           this.isRecording.set(false);
