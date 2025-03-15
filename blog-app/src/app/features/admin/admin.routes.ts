@@ -15,7 +15,7 @@ export const ADMIN_ROUTES: Routes = [
     path: 'users',
     loadComponent: () => import('./admin-users-manager.component')
       .then(m => m.AdminUsersManagerComponent)
-  },  
+  },
   {
     path: 'moderation',
     loadComponent: () => import('./admin-moderation.component')
@@ -25,5 +25,10 @@ export const ADMIN_ROUTES: Routes = [
     path: 'comments',
     loadComponent: () => import('./admin-moderation.component')
       .then(m => m.AdminModerationComponent)
+  },
+  {
+    path: 'chat-dashboard',
+    loadComponent: () => import('./components/admin-chat-dashboard.component')
+      .then(m => m.AdminChatDashboardComponent)
   }
 ];
