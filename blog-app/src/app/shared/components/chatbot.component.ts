@@ -71,6 +71,15 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
               </div>
             </div>
           }
+          @if (lastBotMessage()?.followUpQuestions?.length) {
+            <div class="suggestion-buttons">
+              @for (suggestion of lastBotMessage()?.followUpQuestions || []; track suggestion) {
+                <button mat-stroked-button color="primary" (click)="sendSuggestion(suggestion)">
+                  {{ suggestion }}
+                </button>
+              }
+            </div>
+          }
         </div>
         
         <div class="chat-input">
@@ -224,6 +233,23 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
       margin-top: 50px;
     }
     
+    .suggestion-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-buttons button {
+      font-size: 12px;
+      height: 32px;
+      line-height: 1;
+      white-space: normal;
+      text-align: left;
+      padding: 0 12px;
+    }
+    
     @media (max-width: 450px) {
       .chat-window {
         width: 300px;
@@ -244,10 +270,20 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   unreadCount = signal<number>(0);
   newMessage = '';
   
+  // Signal to track the last bot message
+  lastBotMessage = signal<ChatMessage | null>(null);
+  
   ngOnInit(): void {
     // Subscribe to messages
     this.chatService.messages$.subscribe(messages => {
       this.messages.set(messages);
+      
+      // Find the last bot message
+      const botMessages = messages.filter(m => !m.isUser);
+      if (botMessages.length > 0) {
+        this.lastBotMessage.set(botMessages[botMessages.length - 1]);
+      }
+      
       // Scroll to bottom on new messages
       setTimeout(() => this.scrollToBottom(), 100);
     });
@@ -304,6 +340,12 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
       // You could show an error message to the user here
       console.error('Failed to delete message:', error.message);
     }
+  }
+  
+  // Method to handle suggestion clicks
+  sendSuggestion(suggestion: string): void {
+    this.newMessage = suggestion;
+    this.sendMessage();
   }
   
   private scrollToBottom(): void {
