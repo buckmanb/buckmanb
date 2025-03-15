@@ -38,7 +38,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   @Output() isOpenChange = new EventEmitter<boolean>();
   @ViewChild('chatMessagesContainer') private chatMessagesContainer!: ElementRef;
 
-  isOpen = signal(false);
+  isOpen = signal(true); // Changed from false to true
   messages = signal<ChatMessage[]>([]);
   newMessage = '';
   isRecording = signal<boolean>(false);
