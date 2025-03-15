@@ -60,6 +60,11 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
             <div class="message-container" [class.user-message]="message.isUser" [class.bot-message]="!message.isUser">
               <div class="message">
                 {{ message.content }}
+                @if (message.isUser) {
+                  <button mat-icon-button class="delete-btn" (click)="deleteMessage(message.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
               </div>
               <div class="message-time">
                 {{ formatTimestamp(message.timestamp) }}
@@ -157,10 +162,29 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
     }
     
     .message {
+      position: relative;
       padding: 10px 15px;
       border-radius: 18px;
       word-break: break-word;
       white-space: pre-wrap;
+    }
+    
+    .delete-btn {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      transform: scale(0.7);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      background-color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .message:hover .delete-btn {
+      opacity: 0.7;
+    }
+    
+    .delete-btn:hover {
+      opacity: 1 !important;
     }
     
     .user-message .message {
@@ -269,6 +293,17 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
     }
     
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async deleteMessage(messageId?: string): Promise<void> {
+    if (!messageId) return;
+    
+    try {
+      await this.chatService.deleteMessage(messageId);
+    } catch (error: any) {
+      // You could show an error message to the user here
+      console.error('Failed to delete message:', error.message);
+    }
   }
   
   private scrollToBottom(): void {

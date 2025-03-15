@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Firestore, collection, addDoc, query, orderBy, limit, onSnapshot, Timestamp, where, getDocs, updateDoc, doc } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, query, orderBy, limit, onSnapshot, Timestamp, where, getDocs, updateDoc, doc, getDoc, deleteDoc } from '@angular/fire/firestore';
 import { AuthService } from '../auth/auth.service';
 
 export interface ChatMessage {
@@ -162,6 +162,32 @@ export class ChatService {
 
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), botMessage);
+  }
+
+  async deleteMessage(messageId: string): Promise<void> {
+    try {
+      const user = this.authService.currentUser();
+      
+      // Get the message first to check permissions
+      const messageRef = doc(this.firestore, 'chatMessages', messageId);
+      const messageSnap = await getDoc(messageRef);
+      
+      if (!messageSnap.exists()) {
+        throw new Error('Message not found');
+      }
+      
+      const message = messageSnap.data() as ChatMessage;
+      
+      // Only allow users to delete their own messages
+      if (message.isUser && user?.uid === message.userId) {
+        await deleteDoc(messageRef);
+      } else {
+        throw new Error('You can only delete your own messages');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      throw error;
+    }
   }
 
   clearChat(): void {
