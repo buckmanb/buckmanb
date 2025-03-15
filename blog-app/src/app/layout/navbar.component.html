@@ -27,11 +27,11 @@
       <mat-icon>chat</mat-icon>
     </button>
 
-    <button mat-button *ngIf="!authService.isAuthenticated()" (click)="login()">
+    <button mat-button *ngIf="!this.authService.isAuthenticated()" (click)="login()">
       <mat-icon>login</mat-icon> Login
     </button>
 
-    <button mat-icon-button *ngIf="authService.isAuthenticated()" [matMenuTriggerFor]="userMenu" aria-label="User menu">
+    <button mat-icon-button *ngIf="this.authService.isAuthenticated()" [matMenuTriggerFor]="userMenu" aria-label="User menu">
       <mat-icon>account_circle</mat-icon>
     </button>
     <mat-menu #userMenu="matMenu">
@@ -71,27 +71,25 @@
       <mat-icon>search</mat-icon>
       <span>Search</span>
     </button>
-    <mat-menu-divider></mat-menu-divider>
-    <button mat-menu-item *ngIf="!authService.isAuthenticated()" (click)="login()">
+    <mat-divider></mat-divider>
+    <button mat-menu-item *ngIf="!this.authService.isAuthenticated()" (click)="login()">
       <mat-icon>login</mat-icon>
       <span>Login</span>
     </button>
-    <button mat-menu-item *ngIf="authService.isAuthenticated()" routerLink="/dashboard">
+    <button mat-menu-item *ngIf="this.authService.isAuthenticated()" routerLink="/dashboard">
       <mat-icon>dashboard</mat-icon>
       <span>Dashboard</span>
     </button>
-    <button mat-menu-item *ngIf="authService.isAuthenticated()" (click)="logout()">
+    <button mat-menu-item *ngIf="this.authService.isAuthenticated()" (click)="logout()">
       <mat-icon>logout</mat-icon>
       <span>Logout</span>
     </button>
-    <mat-menu-divider></mat-menu-divider>
+    <mat-divider></mat-divider>
     <button mat-menu-item (click)="toggleChat()">
       <mat-icon>chat</mat-icon>
       <span>Chat Support</span>
       <span class="mobile-badge" *ngIf="unreadChatMessages() > 0">{{ unreadChatMessages() }}</span>
     </button>
-    <mat-menu-item>
-      <app-theme-toggle></app-theme-toggle>
-    </mat-menu-item>
+    <app-theme-toggle></app-theme-toggle>
   </mat-menu>
 </mat-toolbar>

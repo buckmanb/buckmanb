@@ -54,7 +54,6 @@
       </mat-option>
 
       <mat-option
-        *ngIf="!searchTerm"
         *ngFor="let term of popularSearchTerms"
         [value]="term"
         class="popular-search-option">

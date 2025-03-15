@@ -8,6 +8,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule, MatDivider } from '@angular/material/divider'; // Import MatDividerModule
 import { ThemeToggleComponent } from '../shared/components/theme-toggle.component';
 import { ChatbotComponent } from '../shared/components/chatbot.component';
 import { ChatService } from '../core/services/chat.service';
@@ -27,6 +28,8 @@ import { SearchDialogComponent } from '../shared/components/search-dialog/search
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
+    MatDividerModule,
+    MatDivider, // Add MatDividerModule to the imports array
     ThemeToggleComponent,
     ChatbotComponent,
     MatBadgeModule,
@@ -46,9 +49,6 @@ export class NavbarComponent implements OnInit {
   unreadChatMessages = signal(0);
 
   ngOnInit() {
-    // Subscribe to theme changes
-    this.themeService.theme$.subscribe();
-
     // Subscribe to chat state
     this.chatService.chatOpen$.subscribe(isOpen => {
       this.isChatOpen.set(isOpen);

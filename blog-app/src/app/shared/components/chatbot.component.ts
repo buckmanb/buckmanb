@@ -14,7 +14,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { Router } from '@angular/router';
 import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
 import { SaveChatDialogComponent } from './save-chat-dialog.component';
-import { BlogService } from '../../core/services/blog.service';
+import { BlogService, BlogPost } from '../../core/services/blog.service';
 import { ErrorService } from '../../core/services/error.service';
 
 // Declare the SpeechRecognition interface
@@ -54,7 +54,7 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private audioChunks: Blob[] = [];
   private dialog = inject(MatDialog);
   private chatService = inject(ChatService);
-  private authService = inject(AuthService);
+  protected authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
   private ngZone = inject(NgZone); // Inject NgZone
@@ -124,7 +124,20 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   formatTimestamp(timestamp: any): string {
     if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    
+    let date: Date;
+    
+    // Check if it has a toDate method (Firestore Timestamp)
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      date = timestamp.toDate();
+    } else if (timestamp instanceof Date) {
+      // Already a Date object
+      date = timestamp;
+    } else {
+      // Try to parse as a regular date string/number
+      date = new Date(Number(timestamp) || String(timestamp));
+    }
+    
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
@@ -202,14 +215,15 @@ export class ChatbotComponent implements OnInit, OnDestroy {
       );
 
       // Create the blog post object
-      const blogPost = {
+      const blogPost: Partial<BlogPost> = {
         title: blogData.title,
         content: content,
         excerpt: blogData.excerpt,
         tags: blogData.tags,
-        status: 'draft', // Default to draft so user can review before publishing
-        source: 'chat',
-        createdAt: new Date(),
+        status: 'draft' as 'draft' | 'published' | 'archived', // Use correct type for status
+        authorId: this.authService.currentUser()?.uid,
+        authorName: this.authService.currentUser()?.displayName || 'Anonymous',
+        createdAt: new Date()
       };
 
       // Save the blog post
@@ -230,34 +244,44 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   private formatChatContent(messages: ChatMessage[], includeTimestamps: boolean, includeUserInfo: boolean): string {
     let content = '# Chat Conversation\n\n';
-
+  
     messages.forEach(message => {
       if (message.isTyping) return; // Skip typing indicators
-
+  
       const sender = message.isUser ? 'User' : 'Assistant';
       let messageContent = message.content;
-
+  
       // Format message
       content += `## ${sender}\n\n`;
-
+  
       if (includeTimestamps && message.timestamp) {
-        const timestamp = message.timestamp instanceof Date
-          ? message.timestamp
-          : message.timestamp.toDate?.() || new Date(message.timestamp);
-
+        // Handle Firestore Timestamp properly with better type safety
+        let timestamp: Date;
+        
+        // First check if it has a toDate method (Firestore Timestamp)
+        const timestampObj = message.timestamp as any;
+        if (timestampObj && typeof timestampObj.toDate === 'function') {
+          timestamp = timestampObj.toDate();
+        } else if (message.timestamp instanceof Date) {
+          // It's already a Date
+          timestamp = message.timestamp as Date;
+        } else {
+          // Fall back to treating it as a number or string
+          timestamp = new Date(Number(timestampObj) || String(timestampObj));
+        }
+  
         content += `*${timestamp.toLocaleString()}*\n\n`;
       }
-
+  
       if (includeUserInfo && message.userId && !message.isUser) {
         content += `*Response to user ${message.userId}*\n\n`;
       }
-
+  
       content += `${messageContent}\n\n---\n\n`;
     });
-
+  
     return content;
   }
-
 
   async toggleVoiceInput(): Promise<void> {
     if (this.isRecording()) {

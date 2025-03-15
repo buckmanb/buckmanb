@@ -68,8 +68,16 @@ export class ChatService {
   private blogService = inject(BlogService);
   private router = inject(Router);
 
+  // Added Observable properties for chat open state and unread count
+  private chatOpenSubject = new BehaviorSubject<boolean>(false);
+  chatOpen$ = this.chatOpenSubject.asObservable();
+
+  private unreadCountSubject = new BehaviorSubject<number>(0);
+  unreadCount$ = this.unreadCountSubject.asObservable();
+
   private chatOpen = false;
   private sessionId: string;
+
   messages$ = new BehaviorSubject<ChatMessage[]>([]);
   private typingTimeoutId: any = null;
   private conversationContext: {
@@ -132,6 +140,7 @@ export class ChatService {
 
   setChatOpen(isOpen: boolean) {
     this.chatOpen = isOpen;
+    this.chatOpenSubject.next(isOpen);
     if (isOpen) {
       this.markAllMessagesAsRead();
     }
@@ -155,6 +164,10 @@ export class ChatService {
       });
       this.messages$.next(messages);
 
+      // Update unread message count
+      const unreadCount = messages.filter(msg => !msg.isUser && !msg.read).length;
+      this.unreadCountSubject.next(unreadCount);
+
       // Mark bot messages as read when chat is opened
       if (this.chatOpen) {
         this.markAllMessagesAsRead();
@@ -170,9 +183,28 @@ export class ChatService {
       snapshot.forEach(doc => {
         this.updateMessageReadStatus(doc.id, true);
       });
+      
+      // Update the unread count after marking messages as read
+      this.updateUnreadCount();
     });
   }
 
+  private updateUnreadCount(): void {
+    if (!this.sessionId) return;
+    
+    const messagesRef = collection(this.firestore, 'chatMessages');
+    const q = query(
+      messagesRef, 
+      where('sessionId', '==', this.sessionId),
+      where('isUser', '==', false),
+      where('read', '==', false)
+    );
+    
+    getDocs(q).then(snapshot => {
+      const count = snapshot.docs.length;
+      this.unreadCountSubject.next(count);
+    });
+  }
 
   private async updateMessageReadStatus(messageId: string, read: boolean): Promise<void> {
     const messageRef = doc(this.firestore, 'chatMessages', messageId);
@@ -260,6 +292,9 @@ export class ChatService {
       this.subscribeToMessages(); // Re-subscribe to the new session
       this.messages$.next([]); // Clear local messages immediately
 
+      // Reset unread count
+      this.unreadCountSubject.next(0);
+
     } catch (error) {
       console.error('Error clearing chat:', error);
       throw error;
@@ -270,6 +305,9 @@ export class ChatService {
     try {
       const messageRef = doc(this.firestore, 'chatMessages', messageId);
       await deleteDoc(messageRef);
+      
+      // Update unread count if needed
+      this.updateUnreadCount();
     } catch (error) {
       console.error('Error deleting message:', error);
       throw error;
@@ -393,6 +431,11 @@ export class ChatService {
 
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), botMessage);
+    
+    // Update unread count when sending a new message
+    if (!this.chatOpen) {
+      this.updateUnreadCount();
+    }
   }
 
   private updateConversationContext(userMessage: string): void {

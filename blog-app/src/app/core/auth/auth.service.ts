@@ -38,7 +38,8 @@ import {
   of,
   tap,
   map,
-  catchError
+  catchError,
+  retryWhen
 } from 'rxjs';
 import { ErrorService } from '../services/error.service';
 import { UserProfile } from '../models/user-profile.model';
@@ -92,6 +93,10 @@ export class AuthService  {
 
   readonly currentUser$ = user(this.auth);
   readonly currentUser = toSignal(this.currentUser$);
+
+  public isAuthenticated(): boolean { 
+    return this.auth.currentUser != null;
+  }
 
   readonly profile$ = this.currentUser$.pipe(
     switchMap(user => user ? this.getUserProfile$(user.uid) : of(null))
@@ -455,5 +460,10 @@ export class AuthService  {
     }
 
     return ['author', 'admin'].includes(profile.role);
+  }
+
+  googleLogin()
+  {
+    this.router.navigate(['/auth/login']);
   }
 }
