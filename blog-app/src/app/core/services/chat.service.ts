@@ -79,6 +79,16 @@ export class ChatService {
     }
   ];
 
+  private conversationContext: {
+    topic?: string;
+    recentEntities?: string[];
+    lastQuestionAnswered?: boolean;
+    conversationLength: number;
+    userProfileInfo?: any;
+  } = {
+    conversationLength: 0
+  };
+
   constructor() {
     this.initSession();
   }
@@ -202,10 +212,10 @@ export class ChatService {
   }
 
   private async generateBotResponse(userMessage: string): Promise<void> {
-    // Normalize message for better matching
-    const normalizedMsg = userMessage.toLowerCase();
+    // Update conversation context
+    this.updateConversationContext(userMessage);
 
-    // Try to find a matching response
+    // Use context to enhance response
     let botResponse = '';
     let followUpQuestions: string[] = [];
 
@@ -228,6 +238,23 @@ export class ChatService {
       ];
     }
 
+    // Enhance response based on context
+    if (this.conversationContext.topic) {
+      // If we've identified a specific topic the user is interested in
+      if (botResponse.includes('blog posts') || botResponse.includes('articles')) {
+        botResponse += ` I see you're interested in ${this.conversationContext.topic}. `;
+
+        // Add specific topic-related follow-up
+        followUpQuestions.push(`Would you like to see the latest posts about ${this.conversationContext.topic}?`);
+      }
+    }
+
+    // Add conversation-length based customization
+    if (this.conversationContext.conversationLength > 5) {
+      // Add more personalized responses for longer conversations
+      botResponse = botResponse.replace('How can I help you?', 'How else can I assist you today?');
+    }
+
     const botMessage: ChatMessage = {
       content: botResponse,
       timestamp: Timestamp.now(),
@@ -239,6 +266,40 @@ export class ChatService {
 
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), botMessage);
+  }
+
+  private updateConversationContext(userMessage: string): void {
+    // Increment conversation length
+    this.conversationContext.conversationLength++;
+
+    // Analyze message for topic extraction
+    const normalizedMsg = userMessage.toLowerCase();
+
+    // Simple topic detection (would be more sophisticated in production)
+    const topics = [
+      'angular', 'react', 'vue', 'javascript', 'typescript',
+      'css', 'html', 'web development', 'firebase', 'authentication',
+      'database', 'cloud functions', 'hosting', 'performance', 'security'
+    ];
+
+    for (const topic of topics) {
+      if (normalizedMsg.includes(topic)) {
+        this.conversationContext.topic = topic;
+        break;
+      }
+    }
+
+    // Mark last question as answered
+    this.conversationContext.lastQuestionAnswered = true;
+
+    // Get user profile info if signed in
+    const user = this.authService.currentUser();
+    if (user) {
+      this.conversationContext.userProfileInfo = {
+        displayName: user.displayName,
+        isAuthenticated: true
+      };
+    }
   }
 
   async deleteMessage(messageId: string): Promise<void> {
@@ -316,6 +377,15 @@ export class ChatService {
 
     // Re-subscribe with new session ID
     this.subscribeToMessages();
+    
+    // Reset conversation context
+    this.resetConversationContext();
+  }
+  
+  private resetConversationContext(): void {
+    this.conversationContext = {
+      conversationLength: 0
+    };
   }
   
   showTypingIndicator(): void {
