@@ -103,6 +103,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
   sendMessage(): void {
     if (this.newMessage.trim()) {
+      if (this.isRecording()) {
+        this.stopRecording(); // Stop recording if send button is pressed
+      }
       this.chatService.sendMessage(this.newMessage);
       this.newMessage = ''; // Clear input after sending
     }
@@ -165,9 +168,9 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   }
 
   navigateToBlog(blogId?: string): void {
-    if (!blogId) return;
+    if (!blogPostId) return;
 
-    this.router.navigate(['/blog', blogId]);
+    this.router.navigate(['/blog', blogPostId]);
     this.toggleChat(); // Close the chat window
   }
 
