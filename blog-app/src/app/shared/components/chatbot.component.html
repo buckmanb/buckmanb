@@ -104,7 +104,7 @@
       <mat-icon>mic</mat-icon>
     </button>
 
-    <button mat-icon-button color="primary" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+    <button mat-icon-button color="primary" (click)="sendMessage()" [disabled]="!newMessage.trim() || isRecording()">
       <mat-icon>send</mat-icon>
     </button>
   </div>
