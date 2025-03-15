@@ -1,6 +1,6 @@
 import { Injectable, inject, NgZone } from '@angular/core';
 import { Firestore, collection, addDoc, doc, onSnapshot, query, orderBy, limit, Timestamp, collectionGroup, where, getDocs, deleteDoc, getDoc, updateDoc, writeBatch } from '@angular/fire/firestore';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth/auth.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import { Functions, httpsCallable } from '@angular/fire/functions';
