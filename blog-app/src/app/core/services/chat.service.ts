@@ -452,9 +452,11 @@ export class ChatService {
       where('isTyping', '==', true)
     );
 
-    getDocs(q).then(snapshot => {
-      snapshot.docs.forEach(doc => {
-        deleteDoc(doc.ref);
+    this.ngZone.run(() => { // Run inside Angular zone
+      getDocs(q).then(snapshot => {
+        snapshot.docs.forEach(doc => {
+          deleteDoc(doc.ref);
+        });
       });
     });
   }
