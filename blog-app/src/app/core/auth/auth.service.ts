@@ -136,11 +136,11 @@ export class AuthService  {
       });
 
       const credential = await signInWithPopup(
-        this.auth, 
+        this.auth,
         provider,
         browserPopupRedirectResolver
       );
-      
+
       console.log('🌐 Google Sign-In Successful', {
         uid: credential.user.uid,
         email: credential.user.email
@@ -150,7 +150,7 @@ export class AuthService  {
 
       // Update lastLogin field
       await this.updateLastLogin(credential.user.uid);
-      
+
       this.ngZone.run(() => {
         this.router.navigate(['/']);
         this.errorService.showSuccess('Successfully signed in!');
@@ -406,7 +406,7 @@ export class AuthService  {
       console.group('🔄 Processing Google Token');
       console.log('Email:', email);
       console.log('Display Name:', displayName);
-      
+
       // Create a new credential with the Google ID token
       const credential = await signInWithCredential(
         this.auth,
@@ -427,7 +427,7 @@ export class AuthService  {
 
       // Update lastLogin field
       await this.updateLastLogin(credential.user.uid);
-      
+
       console.log('✅ Profile Created/Updated Successfully');
       console.groupEnd();
 
@@ -445,4 +445,15 @@ export class AuthService  {
     }
   }
 
+  // Add this method to the AuthService class
+  hasAuthorAccess(): boolean {
+    const user = this.currentUser();
+    const profile = this.profile();
+
+    if (!user || !profile) {
+      return false;
+    }
+
+    return ['author', 'admin'].includes(profile.role);
+  }
 }

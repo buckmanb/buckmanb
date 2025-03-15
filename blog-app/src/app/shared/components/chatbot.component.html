@@ -2,6 +2,9 @@
   <div class="chat-header">
     <h3>Chat Support</h3>
     <div class="chat-actions">
+      <button mat-icon-button (click)="saveChatToBlog()" matTooltip="Save to Blog" *ngIf="authService.hasAuthorAccess()">
+        <mat-icon>post_add</mat-icon>
+      </button>
       <button mat-icon-button (click)="openChatHistory()" matTooltip="Chat history">
         <mat-icon>history</mat-icon>
       </button>

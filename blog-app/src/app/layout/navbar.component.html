@@ -1,0 +1,97 @@
+<mat-toolbar color="primary">
+  <a routerLink="/" class="logo-link">My Angular Blog</a>
+
+  <span class="spacer"></span>
+
+  <!-- Desktop view -->
+  <div class="toolbar-actions">
+
+    <button mat-button routerLink="/">Home</button>
+    <button mat-button routerLink="/blog">Blog</button>
+    <button mat-button routerLink="/about">About</button>
+    <button mat-button routerLink="/contact">Contact</button>
+
+    <div class="spacer"></div> <!-- This pushes everything after it to the right -->
+
+    <app-search-bar class="navbar-search"></app-search-bar>
+
+    <app-theme-toggle></app-theme-toggle>
+
+    <button mat-icon-button
+            (click)="toggleChat()"
+            matTooltip="Chat Support"
+            [disabled]="isChatOpen()"
+            [matBadge]="unreadChatMessages() > 0 ? unreadChatMessages() : null"
+            matBadgeColor="accent"
+            class="chat-button">
+      <mat-icon>chat</mat-icon>
+    </button>
+
+    <button mat-button *ngIf="!authService.isAuthenticated()" (click)="login()">
+      <mat-icon>login</mat-icon> Login
+    </button>
+
+    <button mat-icon-button *ngIf="authService.isAuthenticated()" [matMenuTriggerFor]="userMenu" aria-label="User menu">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+    <mat-menu #userMenu="matMenu">
+      <button mat-menu-item routerLink="/dashboard">
+        <mat-icon>dashboard</mat-icon>
+        <span>Dashboard</span>
+      </button>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  <!-- Mobile view -->
+  <button mat-icon-button [matMenuTriggerFor]="mobileMenu" aria-label="Mobile menu" class="mobile-menu-button">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <mat-menu #mobileMenu="matMenu">
+    <button mat-menu-item routerLink="/">
+      <mat-icon>home</mat-icon>
+      <span>Home</span>
+    </button>
+    <button mat-menu-item routerLink="/blog">
+      <mat-icon>article</mat-icon>
+      <span>Blog</span>
+    </button>
+    <button mat-menu-item routerLink="/about">
+      <mat-icon>info</mat-icon>
+      <span>About</span>
+    </button>
+    <button mat-menu-item routerLink="/contact">
+      <mat-icon>contact_mail</mat-icon>
+      <span>Contact</span>
+    </button>
+    <button mat-menu-item (click)="openMobileSearch()">
+      <mat-icon>search</mat-icon>
+      <span>Search</span>
+    </button>
+    <mat-menu-divider></mat-menu-divider>
+    <button mat-menu-item *ngIf="!authService.isAuthenticated()" (click)="login()">
+      <mat-icon>login</mat-icon>
+      <span>Login</span>
+    </button>
+    <button mat-menu-item *ngIf="authService.isAuthenticated()" routerLink="/dashboard">
+      <mat-icon>dashboard</mat-icon>
+      <span>Dashboard</span>
+    </button>
+    <button mat-menu-item *ngIf="authService.isAuthenticated()" (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+    <mat-menu-divider></mat-menu-divider>
+    <button mat-menu-item (click)="toggleChat()">
+      <mat-icon>chat</mat-icon>
+      <span>Chat Support</span>
+      <span class="mobile-badge" *ngIf="unreadChatMessages() > 0">{{ unreadChatMessages() }}</span>
+    </button>
+    <mat-menu-item>
+      <app-theme-toggle></app-theme-toggle>
+    </mat-menu-item>
+  </mat-menu>
+</mat-toolbar>

@@ -1,4 +1,4 @@
-import { inject, Injectable, NgZone } from '@angular/core';
+import { Injectable, inject, NgZone } from '@angular/core';
 import {
   Firestore,
   collection,
@@ -431,14 +431,14 @@ export class BlogService {
   async getRelatedPosts(postId: string, tags: string[], maxLimit: number = 3): Promise<BlogPost[]> {
     try {
       if (!tags.length) return [];
-  
+
       // First, create a query to get posts with matching tags
       const postsRef = collection(this.firestore, 'posts');
-      
+
       // We need to restructure our query to avoid the ordering issue
       // When using "!=" with a document ID, we can't have additional orderBy clauses
       // after ordering by document ID
-      
+
       // Solution 1: Use two separate queries and merge results
       // First query: Get posts with matching tags, ordered by publishedAt
       const q1 = query(
@@ -448,15 +448,15 @@ export class BlogService {
         orderBy('publishedAt', 'desc'),
         limitQuery(maxLimit + 1) // Get one extra to account for potential current post
       );
-  
+
       const querySnapshot = await getDocs(q1);
-      
+
       // Filter out the current post from results
       const relatedPosts = querySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as BlogPost))
         .filter(post => post.id !== postId)
         .slice(0, maxLimit);
-  
+
       return relatedPosts;
     } catch (error) {
       console.error('Error fetching related posts:', error);
@@ -510,26 +510,26 @@ export class BlogService {
       if (!currentUser) {
         throw new Error('User must be logged in to like a post');
       }
-      
+
       const postDoc = doc(this.firestore, 'posts', postId);
       const postSnapshot = await getDoc(postDoc);
-      
+
       if (!postSnapshot.exists()) {
         throw new Error('Post not found');
       }
-      
+
       // Check if user has already liked the post
       const likesRef = collection(this.firestore, 'posts', postId, 'likes');
       const userLikeQuery = query(likesRef, where('userId', '==', currentUser.uid));
       const userLikeSnapshot = await getDocs(userLikeQuery);
-      
+
       if (userLikeSnapshot.empty) {
         // User hasn't liked the post yet, add a like
         await addDoc(likesRef, {
           userId: currentUser.uid,
           createdAt: serverTimestamp()
         });
-        
+
         // Increment the post's like count
         const post = postSnapshot.data() as BlogPost;
         await updateDoc(postDoc, {
@@ -585,23 +585,23 @@ export class BlogService {
       if (!currentUser) {
         throw new Error('User must be logged in to delete a post');
       }
-      
+
       const postDoc = doc(this.firestore, 'posts', postId);
       const postSnapshot = await getDoc(postDoc);
-      
+
       if (!postSnapshot.exists()) {
         throw new Error('Post not found');
       }
-      
+
       // Check if the user is the author or an admin
       const existingPost = postSnapshot.data() as BlogPost;
       const isAuthor = existingPost.authorId === currentUser.uid;
       const isAdmin = this.authService.profile()?.role === 'admin';
-      
+
       if (!isAuthor && !isAdmin) {
         throw new Error('You do not have permission to delete this post');
       }
-      
+
       // Delete the post's image if it has one
       if (existingPost.image?.publicId) {
         try {
@@ -612,7 +612,7 @@ export class BlogService {
           // Continue with post deletion even if image deletion fails
         }
       }
-      
+
       // Delete the post
       await deleteDoc(postDoc);
     } catch (error) {
@@ -625,11 +625,11 @@ export class BlogService {
   async getPostsByAuthor(authorId: string, includeNonPublished: boolean = false): Promise<BlogPost[]> {
     try {
       const postsCollection = collection(this.firestore, 'posts');
-      
+
       // Determine if we should include drafts and archived posts
       // Only allow this for the author themselves or admins
       const canSeeAllPosts = await this.canUserAccessAllPosts(authorId);
-      
+
       let q;
       if (includeNonPublished && canSeeAllPosts) {
         // Get all posts by the author
@@ -647,7 +647,7 @@ export class BlogService {
           orderBy('publishedAt', 'desc')
         );
       }
-      
+
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({
         id: doc.id,
@@ -663,14 +663,14 @@ export class BlogService {
    private async canUserAccessAllPosts(authorId: string): Promise<boolean> {
     const currentUser = this.authService.currentUser();
     if (!currentUser) return false;
-    
+
     // User can see their own posts
     if (currentUser.uid === authorId) return true;
-    
+
     // Admins can see all posts
     const profile = this.authService.profile();
     return profile?.role === 'admin';
   }
-  
+
 
 }

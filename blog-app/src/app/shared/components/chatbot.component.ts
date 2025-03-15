@@ -13,6 +13,9 @@ import { ChatService, ChatMessage } from '../../core/services/chat.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { Router } from '@angular/router';
 import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
+import { SaveChatDialogComponent } from './save-chat-dialog.component';
+import { BlogService } from '../../core/services/blog.service';
+import { ErrorService } from '../../core/services/error.service';
 
 // Declare the SpeechRecognition interface
 declare var SpeechRecognition: any;
@@ -55,6 +58,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
   private ngZone = inject(NgZone); // Inject NgZone
+  private blogService = inject(BlogService);
+  private errorService = inject(ErrorService);
 
   recognition: any; // SpeechRecognition instance
 
@@ -172,6 +177,85 @@ export class ChatbotComponent implements OnInit, OnDestroy {
 
     this.router.navigate(['/blog', blogId]);
     this.toggleChat(); // Close the chat window
+  }
+
+  saveChatToBlog(): void {
+    const dialogRef = this.dialog.open(SaveChatDialogComponent, {
+      width: '600px',
+      data: { messages: this.messages() }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.createBlogPostFromChat(result);
+      }
+    });
+  }
+
+  private async createBlogPostFromChat(blogData: any): Promise<void> {
+    try {
+      // Format chat messages as markdown or HTML
+      const content = this.formatChatContent(
+        this.messages(),
+        blogData.includeTimestamps,
+        blogData.includeUserInfo
+      );
+
+      // Create the blog post object
+      const blogPost = {
+        title: blogData.title,
+        content: content,
+        excerpt: blogData.excerpt,
+        tags: blogData.tags,
+        status: 'draft', // Default to draft so user can review before publishing
+        source: 'chat',
+        createdAt: new Date(),
+      };
+
+      // Save the blog post
+      const postId = await this.blogService.createPost(blogPost);
+
+      // Show success message
+      this.snackBar.open('Chat saved as blog post draft', 'Edit Post', {
+        duration: 5000
+      }).onAction().subscribe(() => {
+        // Navigate to edit page when action button clicked
+        this.router.navigate(['/blog', postId, 'edit']);
+      });
+    } catch (error) {
+      console.error('Error creating blog post from chat:', error);
+      this.errorService.showError('Failed to save chat as blog post');
+    }
+  }
+
+  private formatChatContent(messages: ChatMessage[], includeTimestamps: boolean, includeUserInfo: boolean): string {
+    let content = '# Chat Conversation\n\n';
+
+    messages.forEach(message => {
+      if (message.isTyping) return; // Skip typing indicators
+
+      const sender = message.isUser ? 'User' : 'Assistant';
+      let messageContent = message.content;
+
+      // Format message
+      content += `## ${sender}\n\n`;
+
+      if (includeTimestamps && message.timestamp) {
+        const timestamp = message.timestamp instanceof Date
+          ? message.timestamp
+          : message.timestamp.toDate?.() || new Date(message.timestamp);
+
+        content += `*${timestamp.toLocaleString()}*\n\n`;
+      }
+
+      if (includeUserInfo && message.userId && !message.isUser) {
+        content += `*Response to user ${message.userId}*\n\n`;
+      }
+
+      content += `${messageContent}\n\n---\n\n`;
+    });
+
+    return content;
   }
 
 
