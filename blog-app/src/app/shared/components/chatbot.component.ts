@@ -184,7 +184,8 @@ export class ChatbotComponent implements OnInit, OnDestroy {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognitionConstructor: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition; // Explicitly cast to any
       if (SpeechRecognitionConstructor) {
-        this.recognition = this.recognition || new SpeechRecognitionConstructor();
+        // Create a fresh SpeechRecognition object every time
+        this.recognition = new SpeechRecognitionConstructor();
         this.recognition.lang = 'en-US'; // Set language
         this.recognition.interimResults = false; // Get final results only
         this.recognition.maxAlternatives = 1; // Get single best result
@@ -208,12 +209,18 @@ export class ChatbotComponent implements OnInit, OnDestroy {
           this.newMessage = ''; // Clear "Listening..." message
           let errorMessage = 'Voice recognition error';
           if (event.error === 'not-allowed') {
-            errorMessage = 'Microphone access denied. Please check your browser settings.';
+            errorMessage = 'Microphone access denied. Please check your browser settings. Go to settings and allow microphone access for this site.';
           } else if (event.error === 'no-speech') {
             errorMessage = 'No speech detected. Please try again.';
+          } else if (event.error === 'audio-capture') {
+            errorMessage = 'Could not access microphone. Make sure a microphone is connected and working.';
+          } else if (event.error === 'network') {
+            errorMessage = 'Network error occurred. Please check your internet connection.';
+          } else {
+            errorMessage = `Voice recognition error: ${event.error}`; // General error message
           }
           this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
-          console.error('Speech recognition error:', event.error);
+          console.error('Speech recognition error:', event.error, event); // Log full error event for debugging
         };
 
         this.recognition.onresult = (event: any) => {
@@ -227,7 +234,21 @@ export class ChatbotComponent implements OnInit, OnDestroy {
         };
 
         try {
-          this.recognition.start();
+          // Check for microphone permissions before starting
+          navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+            if (permissionStatus.state === 'granted') {
+              this.recognition.start(); // Start recognition if permission is already granted
+            } else if (permissionStatus.state === 'prompt') {
+              // Start recognition which will prompt for permission
+              this.recognition.start();
+            } else if (permissionStatus.state === 'denied') {
+              this.isRecording.set(false);
+              this.newMessage = '';
+              this.snackBar.open('Microphone access denied. Please check your browser settings and allow microphone access for this site.', 'Close', { duration: 5000 });
+            }
+          });
+
+
         } catch (error) {
           this.isRecording.set(false);
           this.newMessage = '';
