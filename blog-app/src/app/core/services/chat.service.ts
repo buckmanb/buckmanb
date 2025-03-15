@@ -12,6 +12,7 @@ export interface ChatMessage {
   sessionId: string;
   read?: boolean;
   followUpQuestions?: string[]; // New field
+  isTyping?: boolean; // New field for typing indicators
 }
 
 interface BotResponse {
@@ -161,6 +162,8 @@ export class ChatService {
     this.unreadCountSubject.next(unreadCount);
   }
 
+  private typingTimeoutId: any = null;
+
   async sendMessage(content: string): Promise<void> {
     if (!content.trim()) return;
 
@@ -179,8 +182,23 @@ export class ChatService {
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), message);
 
-    // Simulate bot response (in a real app, you'd call an API)
-    setTimeout(() => this.generateBotResponse(content), 1000);
+    // Show typing indicator
+    this.showTypingIndicator();
+
+    // Generate bot response with delay
+    if (this.typingTimeoutId) {
+      clearTimeout(this.typingTimeoutId);
+    }
+
+    // Random delay between 1-3 seconds for more natural feel
+    const delay = 1000 + Math.random() * 2000;
+    this.typingTimeoutId = setTimeout(async () => {
+      // Remove typing indicator
+      this.hideTypingIndicator();
+
+      // Generate response
+      await this.generateBotResponse(content);
+    }, delay);
   }
 
   private async generateBotResponse(userMessage: string): Promise<void> {
@@ -298,5 +316,35 @@ export class ChatService {
 
     // Re-subscribe with new session ID
     this.subscribeToMessages();
+  }
+  
+  showTypingIndicator(): void {
+    const typingMessage: ChatMessage = {
+      content: '',
+      timestamp: Timestamp.now(),
+      isUser: false,
+      sessionId: this.sessionId,
+      read: this.chatOpen,
+      isTyping: true
+    };
+    
+    // Add temporary typing indicator message
+    addDoc(collection(this.firestore, 'chatMessages'), typingMessage);
+  }
+  
+  hideTypingIndicator(): void {
+    // Find and remove typing indicator messages
+    const messagesRef = collection(this.firestore, 'chatMessages');
+    const q = query(
+      messagesRef,
+      where('sessionId', '==', this.sessionId),
+      where('isTyping', '==', true)
+    );
+    
+    getDocs(q).then(snapshot => {
+      snapshot.docs.forEach(doc => {
+        deleteDoc(doc.ref);
+      });
+    });
   }
 }

@@ -64,17 +64,25 @@ import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
           }
           @for (message of messages(); track message.id) {
             <div class="message-container" [class.user-message]="message.isUser" [class.bot-message]="!message.isUser">
-              <div class="message">
-                {{ message.content }}
-                @if (message.isUser) {
-                  <button mat-icon-button class="delete-btn" (click)="deleteMessage(message.id)">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                }
-              </div>
-              <div class="message-time">
-                {{ formatTimestamp(message.timestamp) }}
-              </div>
+              @if (message.isTyping) {
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              } @else {
+                <div class="message">
+                  {{ message.content }}
+                  @if (message.isUser) {
+                    <button mat-icon-button class="delete-btn" (click)="deleteMessage(message.id)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
+                </div>
+                <div class="message-time">
+                  {{ formatTimestamp(message.timestamp) }}
+                </div>
+              }
             </div>
           }
           @if (lastBotMessage()?.followUpQuestions?.length) {
@@ -264,11 +272,60 @@ import { ChatHistoryDialogComponent } from './chat-history-dialog.component';
         right: 0;
       }
     }
+
+    /* Typing indicator styles */
+    .typing-indicator {
+      background-color: var(--surface-color);
+      border-radius: 18px;
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      width: 60px;
+    }
+
+    .typing-indicator span {
+      height: 8px;
+      width: 8px;
+      border-radius: 50%;
+      background-color: var(--text-secondary-color);
+      display: block;
+      margin: 0 2px;
+      opacity: 0.4;
+      animation: typing 1.5s infinite;
+    }
+
+    .typing-indicator span:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    @keyframes typing {
+      0% {
+        transform: translateY(0px);
+        opacity: 0.4;
+      }
+      50% {
+        transform: translateY(-5px);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(0px);
+        opacity: 0.4;
+      }
+    }
   `]
 })
 export class ChatbotComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
   private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
   
   @ViewChild('messageContainer') private messageContainer!: ElementRef;
   
