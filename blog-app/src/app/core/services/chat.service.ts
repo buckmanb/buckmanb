@@ -575,13 +575,17 @@ export class ChatService {
 
   async trackEvent(eventType: string, data?: any): Promise<void> {
     try {
-      await addDoc(collection(this.firestore, 'chatAnalytics'), {
+      const eventData: any = { // Create a new object to avoid modifying the original 'data'
         sessionId: this.sessionId,
-        userId: this.authService.currentUser()?.uid,
         eventType,
-        data,
-        timestamp: Timestamp.now()
-      });
+        timestamp: Timestamp.now(),
+        ...data // Spread the existing data
+      };
+      const userId = this.authService.currentUser()?.uid;
+      if (userId) {
+        eventData.userId = userId; // Conditionally add userId
+      }
+      await addDoc(collection(this.firestore, 'chatAnalytics'), eventData);
     } catch (error) {
       console.error('Error tracking event:', error);
     }
