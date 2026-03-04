@@ -1,34 +1,33 @@
-import { Injectable, OnInit, NgZone, inject, ApplicationRef } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
-  Auth,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  user,
   updateProfile,
   browserPopupRedirectResolver,
   sendSignInLinkToEmail,
   signInWithCredential,
   sendPasswordResetEmail,
-  getAuth
-} from '@angular/fire/auth';
+  getAuth,
+  User
+} from 'firebase/auth'; // Using native firebase SDK for functions
+import { Auth, user } from '@angular/fire/auth';
+import { Firestore } from '@angular/fire/firestore';
 import {
-  Firestore,
   doc,
   setDoc,
   getDoc,
-  docData,
   updateDoc,
   serverTimestamp,
-  enableIndexedDbPersistence,
   collection,
   query,
   where,
   getDocs,
   documentId
-} from '@angular/fire/firestore';
+} from 'firebase/firestore'; // Using native firebase SDK for functions
+import { docData } from 'rxfire/firestore';
 import { Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -43,19 +42,17 @@ import {
 } from 'rxjs';
 import { ErrorService } from '../services/error.service';
 import { UserProfile } from '../models/user-profile.model';
-import { environment  } from '../../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService  {
+export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
   private router = inject(Router);
-  private ngZone = inject(NgZone);
   private errorService = inject(ErrorService);
-  private app = inject(ApplicationRef);
 
   private readonly actionCodeSettings = {
     url: `${window.location.origin}/auth/complete-signup`,
@@ -63,15 +60,6 @@ export class AuthService  {
   };
 
   constructor() {
-    enableIndexedDbPersistence(this.firestore)
-      .catch((err) => {
-        if (err.code == 'failed-precondition') {
-          console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-        } else if (err.code == 'unimplemented') {
-          console.warn('The current browser doesn\'t support persistence.');
-        }
-      });
-
     this.profile$.subscribe({
       next: (profile) => {
         if (profile) {
@@ -94,7 +82,7 @@ export class AuthService  {
   readonly currentUser$ = user(this.auth);
   readonly currentUser = toSignal(this.currentUser$);
 
-  public isAuthenticated(): boolean { 
+  public isAuthenticated(): boolean {
     return this.auth.currentUser != null;
   }
 
@@ -156,15 +144,11 @@ export class AuthService  {
       // Update lastLogin field
       await this.updateLastLogin(credential.user.uid);
 
-      this.ngZone.run(() => {
-        this.router.navigate(['/']);
-        this.errorService.showSuccess('Successfully signed in!');
-      });
-
-      this.app.tick();
+      this.router.navigate(['/']);
+      this.errorService.showSuccess('Successfully signed in!');
     } catch (error) {
       console.error('❌ Google Sign-In Failed', error);
-      this.ngZone.run(() => this.errorService.showError(error));
+      this.errorService.showError(error);
       throw error;
     }
   }
@@ -181,15 +165,11 @@ export class AuthService  {
       // Update lastLogin field
       await this.updateLastLogin(result.user.uid);
 
-      this.ngZone.run(() => {
-        this.router.navigate(['/']);
-        this.errorService.showSuccess('Successfully signed in!');
-      });
-
-      this.app.tick();
+      this.router.navigate(['/']);
+      this.errorService.showSuccess('Successfully signed in!');
     } catch (error) {
       console.error('❌ Email Sign-In Failed', error);
-      this.ngZone.run(() => this.errorService.showError(error));
+      this.errorService.showError(error);
       throw error;
     }
   }
@@ -211,15 +191,11 @@ export class AuthService  {
 
       await this.handleInviteSignUp(email);
 
-      this.ngZone.run(() => {
-        this.router.navigate(['/']);
-        this.errorService.showSuccess('Account created successfully!');
-      });
-
-      this.app.tick();
+      this.router.navigate(['/']);
+      this.errorService.showSuccess('Account created successfully!');
     } catch (error) {
       console.error('❌ Email Sign-Up Failed', error);
-      this.ngZone.run(() => this.errorService.showError(error));
+      this.errorService.showError(error);
       throw error;
     }
   }
@@ -234,15 +210,11 @@ export class AuthService  {
 
       await signOut(this.auth);
 
-      this.ngZone.run(() => {
-        this.router.navigate(['/auth/login']);
-        this.errorService.showSuccess('Successfully signed out!');
-      });
-
-      this.app.tick();
+      this.router.navigate(['/auth/login']);
+      this.errorService.showSuccess('Successfully signed out!');
     } catch (error) {
       console.error('❌ Sign-Out Failed', error);
-      this.ngZone.run(() => this.errorService.showError(error));
+      this.errorService.showError(error);
       throw error;
     }
   }
@@ -436,16 +408,12 @@ export class AuthService  {
       console.log('✅ Profile Created/Updated Successfully');
       console.groupEnd();
 
-      this.ngZone.run(() => {
-        this.router.navigate(['/']);
-        this.errorService.showSuccess('Successfully signed in with Google!');
-      });
-
-      this.app.tick();
+      this.router.navigate(['/']);
+      this.errorService.showSuccess('Successfully signed in with Google!');
     } catch (error) {
       console.error('❌ Google Auth Processing Failed', error);
       console.groupEnd();
-      this.ngZone.run(() => this.errorService.showError(error));
+      this.errorService.showError(error);
       throw error;
     }
   }
@@ -474,8 +442,7 @@ export class AuthService  {
   }
 
 
-  googleLogin()
-  {
+  googleLogin() {
     this.router.navigate(['/auth/login']);
   }
 }

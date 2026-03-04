@@ -1,9 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import { ThemeToggleComponent } from './shared/components/theme-toggle.component';
 import { AuthService } from './core/auth/auth.service';
 import { NavbarComponent } from './layout/navbar.component';
 import { ChatbotComponent } from './shared/components/chatbot.component';
@@ -18,7 +17,6 @@ import { ChatService } from './core/services/chat.service';
     RouterLink,
     MatToolbarModule,
     MatButtonModule,
-    ThemeToggleComponent,
     NavbarComponent,
     ChatbotComponent
   ],
@@ -43,7 +41,7 @@ import { ChatService } from './core/services/chat.service';
       </footer>
 
       <!-- Chat component with isOpen binding -->
-      <app-chatbot *ngIf="isChatVisible" [isOpen]="isChatOpen"></app-chatbot>
+      <app-chatbot *ngIf="isChatVisible" [isOpen]="chatService.chatOpen()"></app-chatbot>
     </div>
   `,
   styles: [`
@@ -113,19 +111,13 @@ import { ChatService } from './core/services/chat.service';
 })
 export class AppComponent implements OnInit {
   authService = inject(AuthService);
-  private chatService = inject(ChatService);
-  
+  chatService = inject(ChatService);
+
   currentYear = new Date().getFullYear();
-  
+
   // Chat state properties
   isChatVisible = true; // Always show the chat component
-  isChatOpen = false;   // But initially closed
-  
+
   ngOnInit() {
-    // Subscribe to chat open/close state
-    this.chatService.chatOpen$.subscribe(isOpen => {
-      this.isChatOpen = isOpen;
-      console.log('Chat state changed:', isOpen);
-    });
   }
 }

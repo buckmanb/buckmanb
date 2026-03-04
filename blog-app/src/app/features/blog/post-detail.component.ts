@@ -43,8 +43,7 @@ interface ContentBlock {
     MatSnackBarModule,
     MatDialogModule,
     CodeHighlightDirective,
-    CommentListComponent,
-    ShareDialogComponent,
+    CommentListComponent
   ],
   encapsulation: ViewEncapsulation.None, // Required for styling highlighted code
   template: `
@@ -433,7 +432,7 @@ export class PostDetailComponent implements OnInit {
 
   // Add OpenGraphService to the injected services
   private openGraphService = inject(OpenGraphService);
-  
+
   loading = signal<boolean>(true);
   post = signal<BlogPost | null>(null);
   contentBlocks = signal<ContentBlock[]>([]);
@@ -441,7 +440,7 @@ export class PostDetailComponent implements OnInit {
   liked = signal<boolean>(false);
   liking = signal<boolean>(false);
   sharing = signal<boolean>(false);
-  
+
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       const postId = params.get('id');
@@ -454,31 +453,31 @@ export class PostDetailComponent implements OnInit {
   ngOnDestroy() {
     // Clear OpenGraph tags when navigating away from the post
     this.openGraphService.clearOpenGraphTags();
-    
+
     // Other cleanup from your existing ngOnDestroy
     // this.subscriptions.forEach(sub => sub.unsubscribe());
   }
-  
+
   async loadPost(postId: string) {
     this.loading.set(true);
-    
+
     try {
       const post = await this.blogService.getPostById(postId);
-      
+
       if (post) {
         this.post.set(post);
-        
+
         // Add OpenGraph tags when post is loaded
         this.setOpenGraphTags(post);
 
         setTimeout(() => {
           this.setOpenGraphTags(post);
         }, 1000);
-        
+
 
         // Parse content to identify and separate code blocks
         this.parseContent(post.content);
-        
+
         // Load related posts based on tags
         if (post.tags && post.tags.length > 0) {
           const related = await this.blogService.getRelatedPosts(postId, post.tags, 3);
@@ -492,33 +491,33 @@ export class PostDetailComponent implements OnInit {
     }
   }
 
-    /**
-   * Set OpenGraph tags for the current post
-   */
-    private setOpenGraphTags(post: BlogPost): void {
-      if (!post) return;
-      
-      // Create share data using the SocialShareService
-      const shareData = this.shareService.getShareDataFromPost(post);
-      
-      console.log(shareData);
+  /**
+ * Set OpenGraph tags for the current post
+ */
+  private setOpenGraphTags(post: BlogPost): void {
+    if (!post) return;
 
-      // Set OpenGraph tags
-      this.openGraphService.setOpenGraphTags(shareData);
-    }
-  
+    // Create share data using the SocialShareService
+    const shareData = this.shareService.getShareDataFromPost(post);
+
+    console.log(shareData);
+
+    // Set OpenGraph tags
+    this.openGraphService.setOpenGraphTags(shareData);
+  }
+
   /**
    * Parse post content to separate text and code blocks
    */
   parseContent(content: string) {
     const blocks: ContentBlock[] = [];
-    
+
     // Regular expression to find code blocks
     const codeBlockRegex = /<pre data-language="(\w+)"><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g;
-    
+
     let lastIndex = 0;
     let match;
-    
+
     // Find all code blocks and extract them
     while ((match = codeBlockRegex.exec(content)) !== null) {
       // Add text before code block
@@ -530,20 +529,20 @@ export class PostDetailComponent implements OnInit {
           html: this.sanitizer.bypassSecurityTrustHtml(textContent)
         });
       }
-      
+
       // Get the language from the match
       const language = match[1] || match[2] || 'plaintext';
-      
+
       // Add code block
       blocks.push({
         type: 'code',
         content: this.unescapeHtml(match[3]),
         language: language
       });
-      
+
       lastIndex = match.index + match[0].length;
     }
-    
+
     // Add remaining text
     if (lastIndex < content.length) {
       const textContent = content.substring(lastIndex);
@@ -553,10 +552,10 @@ export class PostDetailComponent implements OnInit {
         html: this.sanitizer.bypassSecurityTrustHtml(textContent)
       });
     }
-    
+
     this.contentBlocks.set(blocks);
   }
-  
+
   /**
    * Unescape HTML entities in code blocks
    */
@@ -568,48 +567,48 @@ export class PostDetailComponent implements OnInit {
       .replace(/&quot;/g, '"')
       .replace(/&#039;/g, "'");
   }
-  
+
   isAuthor(): boolean {
     const currentUser = this.authService.currentUser();
     return !!currentUser && currentUser.uid === this.post()?.authorId;
   }
-  
+
   formatDate(timestamp: any): string {
     if (!timestamp) {
       return '';
     }
-    
+
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'long',
-      day: 'numeric', 
+      day: 'numeric',
       year: 'numeric'
     });
   }
-  
+
   generateExcerpt(post: BlogPost): string {
     if (post.excerpt) {
       return post.excerpt;
     }
-    
+
     // Strip HTML tags and get first 150 characters
     const plainText = post.content.replace(/<[^>]*>/g, '');
     return plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '');
   }
-  
+
   async likePost() {
     const currentPost = this.post();
     if (!currentPost || !currentPost.id) return;
-    
+
     this.liking.set(true);
-    
+
     try {
       await this.blogService.likePost(currentPost.id);
-      
+
       // Update local state
       this.liked.update(value => !value);
       const newLikes = (currentPost.likes || 0) + (this.liked() ? 1 : -1);
-      
+
       this.post.set({
         ...currentPost,
         likes: newLikes
@@ -621,17 +620,17 @@ export class PostDetailComponent implements OnInit {
       this.liking.set(false);
     }
   }
-  
+
   sharePost() {
     const currentPost = this.post();
     if (!currentPost) return;
-    
+
     this.sharing.set(true);
-    
+
     try {
       // Create share data
       const shareData = this.shareService.getShareDataFromPost(currentPost);
-      
+
       // Use the Web Share API if available
       if (!navigator.share) {
         navigator.share({
@@ -654,7 +653,7 @@ export class PostDetailComponent implements OnInit {
       this.sharing.set(false);
     }
   }
-  
+
   /**
    * Open the custom share dialog
    */

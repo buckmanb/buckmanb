@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, inject, signal, OnInit, OnDestroy, ElementRef, ViewChild, NgZone } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, inject, signal, OnInit, OnDestroy, ElementRef, ViewChild, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,8 +34,7 @@ declare var webkitSpeechRecognition: any;
     MatSnackBarModule,
     MatFormFieldModule,
     MatInputModule,
-    FormsModule,
-    ChatHistoryDialogComponent
+    FormsModule
   ],
   templateUrl: './chatbot.component.html',
   styleUrls: ['./chatbot.component.scss']
@@ -45,52 +44,51 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
   @Output() isOpenChange = new EventEmitter<boolean>();
   @ViewChild('chatMessagesContainer') private chatMessagesContainer!: ElementRef;
 
-  messages = signal<ChatMessage[]>([]);
-  newMessage = '';
-  isRecording = signal<boolean>(false);
-  lastBotMessage = signal<ChatMessage | null>(null);
-  private mediaRecorder: MediaRecorder | null = null;
-  private audioChunks: Blob[] = [];
   private dialog = inject(MatDialog);
   private chatService = inject(ChatService);
   protected authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
-  private ngZone = inject(NgZone);
   private blogService = inject(BlogService);
   private errorService = inject(ErrorService);
 
+  messages = this.chatService.messages;
+  newMessage = '';
+  isRecording = signal<boolean>(false);
+  lastBotMessage = computed(() => {
+    const msgs = this.messages();
+    const botMessages = msgs.filter(m => !m.isUser);
+    return botMessages.length > 0 ? botMessages[botMessages.length - 1] : null;
+  });
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+
   recognition: any; // SpeechRecognition instance
 
-  constructor() { 
+  constructor() {
     console.log('Chatbot component initialized');
+
+    effect(() => {
+      // Trigger whenever messages update to scroll down
+      const currentMessages = this.messages();
+      if (currentMessages.length > 0) {
+        setTimeout(() => this.scrollToBottom(), 100);
+      }
+    });
   }
 
   ngOnInit(): void {
     console.log('Chatbot ngOnInit, isOpen:', this.isOpen);
-    
-    this.chatService.messages$.subscribe(messages => {
-      this.messages.set(messages);
 
-      // Find the last bot message
-      const botMessages = messages.filter(m => !m.isUser);
-      if (botMessages.length > 0) {
-        this.lastBotMessage.set(botMessages[botMessages.length - 1]);
-      }
-
-      // Scroll to bottom on new messages
-      setTimeout(() => this.scrollToBottom(), 100);
-    });
-    
     // Update chat service with initial state
     if (this.isOpen) {
       this.chatService.setChatOpen(true);
     }
   }
-  
+
   ngOnChanges(changes: SimpleChanges): void {
     console.log('Chatbot ngOnChanges:', changes);
-    
+
     // React to isOpen changes from parent
     if (changes['isOpen'] && !changes['isOpen'].firstChange) {
       console.log('isOpen changed to:', this.isOpen);
@@ -104,7 +102,7 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
       this.recognition.stop(); // Stop speech recognition if running
     }
   }
-  
+
   // Update the visibility class based on isOpen
   updateChatVisibility(): void {
     if (this.isOpen) {
@@ -117,7 +115,7 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
     this.isOpenChange.emit(this.isOpen);
     this.chatService.setChatOpen(this.isOpen);
     console.log('Chat toggled. New state:', this.isOpen);
-    
+
     if (this.isOpen) {
       setTimeout(() => this.scrollToBottom(), 300);
     }
@@ -145,9 +143,9 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
 
   formatTimestamp(timestamp: any): string {
     if (!timestamp) return '';
-    
+
     let date: Date;
-    
+
     // Check if it has a toDate method (Firestore Timestamp)
     if (timestamp && typeof timestamp.toDate === 'function') {
       date = timestamp.toDate();
@@ -158,7 +156,7 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
       // Try to parse as a regular date string/number
       date = new Date(Number(timestamp) || String(timestamp));
     }
-    
+
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
@@ -166,7 +164,7 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
     if (this.chatMessagesContainer) {
       try {
         this.chatMessagesContainer.nativeElement.scrollTop = this.chatMessagesContainer.nativeElement.scrollHeight;
-      } catch(err) { 
+      } catch (err) {
         console.error('Error scrolling to bottom:', err);
       }
     }
@@ -267,20 +265,20 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
 
   private formatChatContent(messages: ChatMessage[], includeTimestamps: boolean, includeUserInfo: boolean): string {
     let content = '# Chat Conversation\n\n';
-  
+
     messages.forEach(message => {
       if (message.isTyping) return; // Skip typing indicators
-  
+
       const sender = message.isUser ? 'User' : 'Assistant';
       let messageContent = message.content;
-  
+
       // Format message
       content += `## ${sender}\n\n`;
-  
+
       if (includeTimestamps && message.timestamp) {
         // Handle Firestore Timestamp properly with better type safety
         let timestamp: Date;
-        
+
         // First check if it has a toDate method (Firestore Timestamp)
         const timestampObj = message.timestamp as any;
         if (timestampObj && typeof timestampObj.toDate === 'function') {
@@ -292,17 +290,17 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
           // Fall back to treating it as a number or string
           timestamp = new Date(Number(timestampObj) || String(timestampObj));
         }
-  
+
         content += `*${timestamp.toLocaleString()}*\n\n`;
       }
-  
+
       if (includeUserInfo && message.userId && !message.isUser) {
         content += `*Response to user ${message.userId}*\n\n`;
       }
-  
+
       content += `${messageContent}\n\n---\n\n`;
     });
-  
+
     return content;
   }
 
@@ -354,9 +352,7 @@ export class ChatbotComponent implements OnInit, OnChanges, OnDestroy {
 
         this.recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
-          this.ngZone.run(() => { // Run inside NgZone for Angular change detection
-            this.newMessage = transcript;
-          });
+          this.newMessage = transcript;
         };
 
         try {

@@ -1,5 +1,5 @@
 // src/app/features/blog/post-list.component.ts
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +8,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { BlogService, BlogPost } from '../../core/services/blog.service';
+import { BlogPost } from '../../core/services/blog.service';
+import { PostStateService } from '../../core/state/post-state.service';
 
 @Component({
   selector: 'app-post-list',
@@ -204,50 +205,39 @@ import { BlogService, BlogPost } from '../../core/services/blog.service';
   `]
 })
 export class PostListComponent implements OnInit {
-  private blogService = inject(BlogService);
-  
-  posts = signal<BlogPost[]>([]);
-  loading = signal<boolean>(false);
-  
+  postState = inject(PostStateService);
+
+  // Forward signals for template bindings
+  posts = this.postState.posts;
+  loading = this.postState.loading;
+  hasMore = this.postState.hasMore;
+
   ngOnInit() {
-    this.loadPosts();
+    this.postState.loadFilteredPosts({ status: 'published', sort: 'latest', limit: 10 });
   }
-  
-  async loadPosts() {
-    try {
-      this.loading.set(true);
-      const posts = await this.blogService.getPublishedPosts();
-      this.posts.set(posts);
-    } catch (error) {
-      console.error('Error loading posts:', error);
-    } finally {
-      this.loading.set(false);
-    }
-  }
-  
+
   loadMore() {
-    // Implement loading more posts
-    console.log('Load more posts');
+    this.postState.loadMorePosts(10);
   }
-  
+
   formatDate(timestamp: any): string {
     if (!timestamp) {
       return '';
     }
-    
+
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric', 
+      day: 'numeric',
       year: 'numeric'
     });
   }
-  
+
   generateExcerpt(post: BlogPost): string {
     if (post.excerpt) {
       return post.excerpt;
     }
-    
+
     // Strip HTML tags and get first 150 characters
     const plainText = post.content.replace(/<[^>]*>/g, '');
     return plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '');

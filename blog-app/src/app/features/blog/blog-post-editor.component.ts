@@ -17,13 +17,13 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { Editor, NgxEditorModule, Toolbar } from 'ngx-editor';
 import { CloudinaryUploadResult } from '../../core/services/cloudinary.service';
 import { ImageUploadComponent } from '../../shared/components/image-upload.component';
-import { CodeHighlightDirective } from '../../shared/directives/code-highlight.directive';
 import { BlogPost, BlogService } from '../../core/services/blog.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EditorToolbarComponent } from '../../shared/components/editor-toolbar.component';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorAutoSave } from '../../shared/editor/auto-save';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
+import { AuthService } from '../../core/auth/auth.service';
 
 import jsonDoc from '../../shared/editor/doc';
 import schema from '../../shared/editor/schema';
@@ -49,7 +49,6 @@ import { CustomMenuComponent } from '../../shared/editor/custom-menu';
     MatDialogModule,
     NgxEditorModule,
     ImageUploadComponent,
-    CodeHighlightDirective,
     EditorToolbarComponent,
     CustomMenuComponent
   ],
@@ -163,9 +162,13 @@ import { CustomMenuComponent } from '../../shared/editor/custom-menu';
               </mat-form-field>
             </div>
             
-            <!-- Featured checkbox -->
-            <div class="featured-section">
-              <mat-checkbox formControlName="featured">
+            <!-- Visibility & Featured checkboxes -->
+            <div class="visibility-section" style="display: flex; gap: 24px;">
+              <mat-checkbox formControlName="isPublic">
+                Available to be viewed by other users
+              </mat-checkbox>
+              
+              <mat-checkbox *ngIf="isAdmin" formControlName="featured">
                 Feature this post on the homepage
               </mat-checkbox>
             </div>
@@ -228,7 +231,7 @@ import { CustomMenuComponent } from '../../shared/editor/custom-menu';
       margin-bottom: 16px;
     }
     
-    .image-section, .tags-section, .featured-section {
+    .image-section, .tags-section, .visibility-section {
       margin-bottom: 16px;
     }
     
@@ -294,7 +297,12 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
   private dialog = inject(MatDialog);
   private autoSave = inject(EditorAutoSave);
   private sanitizer = inject(DomSanitizer);
-  
+  private authService = inject(AuthService);
+
+  get isAdmin(): boolean {
+    return this.authService.profile()?.role === 'admin';
+  }
+
   editor!: Editor;
   // Define toolbar options
   toolbar: Toolbar = [
@@ -306,28 +314,29 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
     ['text_color', 'background_color'],
     ['align_left', 'align_center', 'align_right', 'align_justify'],
   ];
-  
+
   postForm = this.fb.group({
     title: ['', Validators.required],
     excerpt: ['', Validators.maxLength(200)],
     content: ['', Validators.required],
-    featured: [false]
+    featured: [false],
+    isPublic: [false]
   });
-  
+
   tags: string[] = [];
   featuredImage?: CloudinaryUploadResult;
-  
+
   saving = false;
   saveAsDraft = true;
   isEditMode = false;
   currentPost?: BlogPost;
   postId?: string;
   editorMode: 'edit' | 'preview' = 'edit';
-  
+
   separatorKeysCodes: number[] = [ENTER, COMMA];
 
   form?: FormGroup;
-  
+
   ngOnInit() {
     // editordoc = jsonDoc;
 
@@ -365,7 +374,7 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
         this.autoSave.updateContent(content);
       }
     });
-    
+
     // Check if we're in edit mode by looking for an ID parameter
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -375,30 +384,37 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
         this.loadExistingPost(id);
       }
     });
+
+    // If featured becomes checked, automatically check isPublic
+    this.postForm.get('featured')?.valueChanges.subscribe(isFeatured => {
+      if (isFeatured) {
+        this.postForm.get('isPublic')?.setValue(true);
+      }
+    });
   }
-  
+
   ngOnDestroy() {
     this.editor.destroy();
   }
-  
+
   /**
    * Load existing post data when in edit mode
    */
   async loadExistingPost(postId: string) {
     try {
       const post = await this.blogService.getPostById(postId);
-      
+
       if (post) {
         this.currentPost = post;
-        
-        // Populate the form with existing post data
+
         this.postForm.patchValue({
           title: post.title,
           excerpt: post.excerpt || '',
           content: post.content,
-          featured: post.featured || false
+          featured: post.featured || false,
+          isPublic: post.isPublic || false
         });
-        
+
         this.tags = [...(post.tags || [])];
       } else {
         this.snackBar.open('Post not found', 'Close', { duration: 3000 });
@@ -409,42 +425,42 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
       this.snackBar.open('Error loading post', 'Close', { duration: 3000 });
     }
   }
-  
+
   onImageUploaded(result: CloudinaryUploadResult) {
     this.featuredImage = result;
   }
-  
+
   onImageRemoved() {
     this.featuredImage = undefined;
   }
-  
+
   addTag(event: any) {
     const value = (event.value || '').trim();
-    
+
     if (value) {
       // Check if tag already exists
       if (!this.tags.includes(value)) {
         this.tags.push(value);
       }
     }
-    
+
     // Clear the input value
     if (event.input) {
       event.input.value = '';
     }
   }
-  
+
   removeTag(tag: string) {
     const index = this.tags.indexOf(tag);
-    
+
     if (index >= 0) {
       this.tags.splice(index, 1);
     }
   }
-  
+
   editTag(tag: string, event: any) {
     const newTag = event.value.trim();
-    
+
     // Replace old tag with edited tag
     if (newTag && !this.tags.includes(newTag)) {
       const index = this.tags.indexOf(tag);
@@ -453,17 +469,17 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
       }
     }
   }
-  
+
   saveDraft() {
     this.saveAsDraft = true;
     this.savePost('draft');
   }
-  
+
   publishPost() {
     this.saveAsDraft = false;
     this.savePost('published');
   }
-  
+
   async savePost(status: 'draft' | 'published') {
     if (this.postForm.invalid) {
       this.snackBar.open('Please fill in all required fields', 'Close', { duration: 3000 });
@@ -471,21 +487,22 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
       this.postForm.markAllAsTouched();
       return;
     }
-    
+
     this.saving = true;
-    
+
     const formData = this.postForm.getRawValue();
-    
+
     const post: Partial<BlogPost> = {
       title: formData.title!,
       content: formData.content!,
       excerpt: formData.excerpt || undefined,
       featured: formData.featured || false,
+      isPublic: formData.isPublic || false,
       tags: this.tags,
       status: status,
       imageUrl: this.featuredImage?.secure_url || this.currentPost?.imageUrl,
     };
-    
+
     // Add image data if available
     if (this.featuredImage) {
       post.image = {
@@ -495,22 +512,22 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
         height: this.featuredImage.height
       };
     }
-    
+
     try {
       if (this.isEditMode && this.postId) {
         // Update existing post
         await this.blogService.updatePost(this.postId, post);
         this.snackBar.open('Post updated successfully', 'Close', { duration: 3000 });
-        
+
         // Navigate to the post detail page
         this.router.navigate(['/blog', this.postId]);
       } else {
         // Create new post
         const newPostId = await this.blogService.createPost(post);
-        
+
         // Clear auto-saved draft after successful save
         this.autoSave.clearDraft();
-        
+
         if (status === 'published') {
           this.snackBar.open('Post published successfully', 'Close', { duration: 3000 });
           // Navigate to the new post
@@ -528,7 +545,7 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
       this.saving = false;
     }
   }
-  
+
   cancel() {
     if (this.isEditMode && this.postId) {
       // Navigate back to post detail page
@@ -538,7 +555,7 @@ export class BlogPostEditorComponent implements OnInit, OnDestroy {
       this.router.navigate(['/blog']);
     }
   }
-  
+
   sanitizedContent(): SafeHtml {
     const content = this.postForm.get('content')?.value || '';
     return this.sanitizer.bypassSecurityTrustHtml(content);

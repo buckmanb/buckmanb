@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,21 +7,20 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
-import { BlogService, BlogPost } from '../../core/services/blog.service';
-import { FeaturedPostsComponent  } from '../blog/featured-posts.component'; 
+import { BlogPost } from '../../core/services/blog.service';
+import { PostStateService } from '../../core/state/post-state.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [
-    CommonModule, 
-    MatButtonModule, 
-    MatIconModule, 
-    RouterLink, 
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    RouterLink,
     MatCardModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
-    FeaturedPostsComponent
+    MatProgressSpinnerModule
   ],
   template: `
     <div class="home-container">
@@ -394,62 +393,41 @@ import { FeaturedPostsComponent  } from '../blog/featured-posts.component';
 })
 export class HomeComponent implements OnInit {
   authService = inject(AuthService);
-  private blogService = inject(BlogService);
-  
-  loading = signal<boolean>(true);
-  posts = signal<BlogPost[]>([]);
-  featuredPosts = signal<BlogPost[]>([]);
-  
-  // Helper method to check if user is logged in with author or admin role
+  postState = inject(PostStateService);
+
+  // Expose signals as direct template bindings
+  loading = this.postState.loading;
+  posts = this.postState.posts;
+  featuredPosts = this.postState.featuredPosts;
+
   isAuthorOrAdmin(): boolean {
     const profile = this.authService.profile();
     return !!profile && (profile.role === 'author' || profile.role === 'admin');
   }
-  
+
   ngOnInit() {
-    this.loadPosts();
-    this.loadFeaturedPosts();
+    this.postState.loadPublishedPosts(6);
+    this.postState.loadFeaturedPosts(3);
   }
-  
-  async loadPosts() {
-    try {
-      this.loading.set(true);
-      const posts = await this.blogService.getPublishedPosts(6); // Limit to 6 posts for homepage
-      this.posts.set(posts);
-    } catch (error) {
-      console.error('Error loading posts:', error);
-    } finally {
-      this.loading.set(false);
-    }
-  }
-  
-  async loadFeaturedPosts() {
-    try {
-      const featured = await this.blogService.getFeaturedPosts(3); // Limit to 3 featured posts
-      this.featuredPosts.set(featured);
-    } catch (error) {
-      console.error('Error loading featured posts:', error);
-    }
-  }
-  
+
   formatDate(timestamp: any): string {
     if (!timestamp) {
       return '';
     }
-    
+
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric', 
+      day: 'numeric',
       year: 'numeric'
     });
   }
-  
+
   generateExcerpt(post: BlogPost): string {
     if (post.excerpt) {
       return post.excerpt;
     }
-    
+
     // Strip HTML tags and get first 150 characters
     const plainText = post.content.replace(/<[^>]*>/g, '');
     return plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '');

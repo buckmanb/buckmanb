@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
@@ -49,14 +49,14 @@ import { AuthService } from '../../core/auth/auth.service';
         <mat-card-content>
           <div class="messages-container" #messagesContainer>
             <!-- Empty state -->
-            <div *ngIf="messages.length === 0" class="empty-state">
+            <div *ngIf="messages().length === 0" class="empty-state">
               <mat-icon>chat</mat-icon>
               <h2>Start a Conversation</h2>
               <p>Ask me anything about our blog, site features, or any other questions you might have.</p>
             </div>
             
             <!-- Messages -->
-            <div *ngFor="let message of messages" class="message-wrapper" 
+            <div *ngFor="let message of messages()" class="message-wrapper" 
                  [ngClass]="{'user-message': message.isUser, 'bot-message': !message.isUser}">
               <div class="message-avatar">
                 <mat-icon>{{ message.isUser ? 'person' : 'smart_toy' }}</mat-icon>
@@ -351,39 +351,42 @@ import { AuthService } from '../../core/auth/auth.service';
 export class ChatPageComponent implements OnInit {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
 
-  messages: ChatMessage[] = [];
-  newMessage: string = '';
-  isRecording: boolean = false;
-  
   private chatService = inject(ChatService);
   private authService = inject(AuthService);
-  
-  constructor() {}
-  
-  ngOnInit(): void {
-    // Subscribe to messages from the chat service
-    this.chatService.messages$.subscribe(messages => {
-      this.messages = messages;
-      setTimeout(() => this.scrollToBottom(), 100);
+
+  messages = this.chatService.messages;
+  newMessage: string = '';
+  isRecording: boolean = false;
+
+  constructor() {
+    effect(() => {
+      // Trigger scroll when messages change
+      const msgs = this.messages();
+      if (msgs.length > 0) {
+        setTimeout(() => this.scrollToBottom(), 100);
+      }
     });
   }
-  
+
+  ngOnInit(): void {
+  }
+
   sendMessage(): void {
     if (this.newMessage.trim()) {
       this.chatService.sendMessage(this.newMessage);
       this.newMessage = '';
     }
   }
-  
+
   sendSuggestion(suggestion: string): void {
     this.newMessage = suggestion;
     this.sendMessage();
   }
-  
+
   clearChat(): void {
     this.chatService.clearChat();
   }
-  
+
   toggleVoiceInput(): void {
     this.isRecording = !this.isRecording;
     // Implement voice recording functionality here
@@ -394,12 +397,12 @@ export class ChatPageComponent implements OnInit {
       }, 3000);
     }
   }
-  
+
   formatTimestamp(timestamp: any): string {
     if (!timestamp) return '';
-    
+
     let date: Date;
-    
+
     // Check if it has a toDate method (Firestore Timestamp)
     if (timestamp && typeof timestamp.toDate === 'function') {
       date = timestamp.toDate();
@@ -408,15 +411,15 @@ export class ChatPageComponent implements OnInit {
     } else {
       date = new Date(Number(timestamp) || String(timestamp));
     }
-    
+
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
-  
+
   private scrollToBottom(): void {
     if (this.messagesContainer) {
       try {
         this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
-      } catch(err) {
+      } catch (err) {
         console.error('Error scrolling to bottom:', err);
       }
     }

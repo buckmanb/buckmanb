@@ -1,5 +1,6 @@
-import { Injectable, inject, NgZone } from '@angular/core';
-import { Firestore, collection, addDoc, doc, onSnapshot, query, orderBy, limit, Timestamp, collectionGroup, where, getDocs, deleteDoc, getDoc, updateDoc, writeBatch } from '@angular/fire/firestore';
+import { Injectable, inject, signal } from '@angular/core';
+import { Firestore } from '@angular/fire/firestore';
+import { collection, addDoc, doc, onSnapshot, query, orderBy, limit, Timestamp, collectionGroup, where, getDocs, deleteDoc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { AuthService } from '../auth/auth.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Router } from '@angular/router';
@@ -61,7 +62,6 @@ interface BotResponse {
 })
 export class ChatService {
   private firestore = inject(Firestore);
-  private ngZone = inject(NgZone);
   private authService = inject(AuthService);
   private functions = inject(Functions);
   private http = inject(HttpClient);
@@ -69,16 +69,12 @@ export class ChatService {
   private router = inject(Router);
 
   // Added Observable properties for chat open state and unread count
-  private chatOpenSubject = new BehaviorSubject<boolean>(false);
-  chatOpen$ = this.chatOpenSubject.asObservable();
+  chatOpen = signal<boolean>(false);
+  unreadCount = signal<number>(0);
 
-  private unreadCountSubject = new BehaviorSubject<number>(0);
-  unreadCount$ = this.unreadCountSubject.asObservable();
-
-  private chatOpen = false;
   private sessionId: string;
 
-  messages$ = new BehaviorSubject<ChatMessage[]>([]);
+  messages = signal<ChatMessage[]>([]);
   private typingTimeoutId: any = null;
   private conversationContext: {
     topic?: string;
@@ -87,8 +83,8 @@ export class ChatService {
     conversationLength: number;
     userProfileInfo?: any;
   } = {
-    conversationLength: 0
-  };
+      conversationLength: 0
+    };
   private botResponses: BotResponse[] = [
     {
       keywords: ['hello', 'hi', 'hey', 'greetings'],
@@ -139,8 +135,7 @@ export class ChatService {
   }
 
   setChatOpen(isOpen: boolean) {
-    this.chatOpen = isOpen;
-    this.chatOpenSubject.next(isOpen);
+    this.chatOpen.set(isOpen);
     if (isOpen) {
       this.markAllMessagesAsRead();
     }
@@ -162,14 +157,14 @@ export class ChatService {
           ...doc.data()
         } as ChatMessage;
       });
-      this.messages$.next(messages);
+      this.messages.set(messages);
 
       // Update unread message count
       const unreadCount = messages.filter(msg => !msg.isUser && !msg.read).length;
-      this.unreadCountSubject.next(unreadCount);
+      this.unreadCount.set(unreadCount);
 
       // Mark bot messages as read when chat is opened
-      if (this.chatOpen) {
+      if (this.chatOpen()) {
         this.markAllMessagesAsRead();
       }
     });
@@ -183,7 +178,7 @@ export class ChatService {
       snapshot.forEach(doc => {
         this.updateMessageReadStatus(doc.id, true);
       });
-      
+
       // Update the unread count after marking messages as read
       this.updateUnreadCount();
     });
@@ -191,18 +186,18 @@ export class ChatService {
 
   private updateUnreadCount(): void {
     if (!this.sessionId) return;
-    
+
     const messagesRef = collection(this.firestore, 'chatMessages');
     const q = query(
-      messagesRef, 
+      messagesRef,
       where('sessionId', '==', this.sessionId),
       where('isUser', '==', false),
       where('read', '==', false)
     );
-    
+
     getDocs(q).then(snapshot => {
       const count = snapshot.docs.length;
-      this.unreadCountSubject.next(count);
+      this.unreadCount.set(count);
     });
   }
 
@@ -229,10 +224,12 @@ export class ChatService {
       content,
       timestamp: Timestamp.now(),
       isUser: true,
-      userId,
       sessionId: this.sessionId,
       read: true
     };
+    if (userId) {
+      message.userId = userId;
+    }
 
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), message);
@@ -290,10 +287,10 @@ export class ChatService {
       this.sessionId = this.generateSessionId();
       localStorage.setItem('chat_session_id', this.sessionId);
       this.subscribeToMessages(); // Re-subscribe to the new session
-      this.messages$.next([]); // Clear local messages immediately
+      this.messages.set([]); // Clear local messages immediately
 
       // Reset unread count
-      this.unreadCountSubject.next(0);
+      this.unreadCount.set(0);
 
     } catch (error) {
       console.error('Error clearing chat:', error);
@@ -305,7 +302,7 @@ export class ChatService {
     try {
       const messageRef = doc(this.firestore, 'chatMessages', messageId);
       await deleteDoc(messageRef);
-      
+
       // Update unread count if needed
       this.updateUnreadCount();
     } catch (error) {
@@ -345,10 +342,10 @@ export class ChatService {
       ];
     }
 
-     // Check for blog post references
+    // Check for blog post references
     if (normalizedMsg.includes('blog') ||
-        normalizedMsg.includes('article') ||
-        normalizedMsg.includes('post')) {
+      normalizedMsg.includes('article') ||
+      normalizedMsg.includes('post')) {
 
       // Try to find relevant blog posts
       try {
@@ -365,7 +362,7 @@ export class ChatService {
             timestamp: Timestamp.now(),
             isUser: false,
             sessionId: this.sessionId,
-            read: this.chatOpen,
+            read: this.chatOpen(),
             followUpQuestions
           };
           await addDoc(collection(this.firestore, 'chatMessages'), botTextMessage);
@@ -384,7 +381,7 @@ export class ChatService {
               timestamp: Timestamp.now(),
               isUser: false,
               sessionId: this.sessionId,
-              read: this.chatOpen
+              read: this.chatOpen()
             };
 
             await addDoc(collection(this.firestore, 'chatMessages'), previewMessage);
@@ -425,16 +422,16 @@ export class ChatService {
       timestamp: Timestamp.now(),
       isUser: false,
       sessionId: this.sessionId,
-      read: this.chatOpen,
+      read: this.chatOpen(),
       followUpQuestions
     };
 
     // Add to Firestore
     await addDoc(collection(this.firestore, 'chatMessages'), botMessage);
-    
-    // Update unread count when sending a new message
-    if (!this.chatOpen) {
-      this.updateUnreadCount();
+
+    // Mark bot messages as read when chat is opened
+    if (this.chatOpen()) {
+      this.markAllMessagesAsRead();
     }
   }
 
@@ -478,7 +475,7 @@ export class ChatService {
       timestamp: Timestamp.now(),
       isUser: false,
       sessionId: this.sessionId,
-      read: this.chatOpen,
+      read: this.chatOpen(),
       isTyping: true
     };
 
@@ -495,11 +492,9 @@ export class ChatService {
       where('isTyping', '==', true)
     );
 
-    this.ngZone.run(() => { // Run inside Angular zone
-      getDocs(q).then(snapshot => {
-        snapshot.docs.forEach(doc => {
-          deleteDoc(doc.ref);
-        });
+    getDocs(q).then(snapshot => {
+      snapshot.docs.forEach(doc => {
+        deleteDoc(doc.ref);
       });
     });
   }
@@ -579,13 +574,16 @@ export class ChatService {
         content: translatedText,
         timestamp: Timestamp.now(),
         isUser: message.isUser,
-        userId: message.userId,
         sessionId: this.sessionId,
         read: true,
         originalMessageId: messageId,
         translatedFrom: message.content,
         language: targetLanguage
       };
+
+      if (message.userId) {
+        translatedMessage.userId = message.userId;
+      }
 
       await addDoc(collection(this.firestore, 'chatMessages'), translatedMessage);
 
@@ -602,11 +600,13 @@ export class ChatService {
     const feedback: ChatFeedback = {
       sessionId: this.sessionId,
       messageId,
-      userId,
       rating,
       comment,
       timestamp: Timestamp.now()
     };
+    if (userId) {
+      feedback.userId = userId;
+    }
 
     try {
       await addDoc(collection(this.firestore, 'chatFeedback'), feedback);

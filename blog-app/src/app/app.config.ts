@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
@@ -6,10 +6,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 
-import { initializeApp } from '@angular/fire/app';
+import { getApp, initializeApp } from '@angular/fire/app';
 import { provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
-import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { provideFirestore } from '@angular/fire/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage, provideStorage } from '@angular/fire/storage';
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
 
@@ -27,13 +28,19 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideExperimentalZonelessChangeDetection(),
     // provideRouter(routes, withHashLocation() ),
     provideRouter(routes),
     provideHttpClient(),
     provideAnimations(),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()),
+    provideFirestore(() => {
+      const app = getApp();
+      return initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      });
+    }),
     provideStorage(() => getStorage()),
     provideFunctions(() => getFunctions()),
     MatButtonModule,

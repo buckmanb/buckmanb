@@ -38,7 +38,7 @@
         <ng-container *ngIf="!message.isTyping">
           <div class="message" [ngClass]="{'rich-content': message.contentType === 'blog-preview'}">
             <ng-container *ngIf="message.contentType === 'blog-preview' && message.blogPreview">
-              <div class="blog-preview" (click)="navigateToBlog(message.blogPreview?.id)">
+              <div class="blog-preview" (click)="navigateToBlog(message.blogPreview.id)">
                 <ng-container *ngIf="message.blogPreview.imageUrl">
                   <img [src]="message.blogPreview.imageUrl" alt="Blog preview">
                 </ng-container>
